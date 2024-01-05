@@ -1,0 +1,62 @@
+{
+	"root": true,
+	"env": {
+		"browser": true,
+		"es2021": true
+	},
+	"extends": [
+		"plugin:prettier/recommended",
+		"next/core-web-vitals",
+		"eslint:recommended",
+		"plugin:@typescript-eslint/recommended",
+		"plugin:react/recommended"
+	],
+	"overrides": [
+		{
+			"env": {
+				"node": true
+			},
+			"files": [".eslintrc.{js,cjs}"],
+			"parserOptions": {
+				"sourceType": "script"
+			}
+		}
+	],
+	"parser": "@typescript-eslint/parser",
+	"parserOptions": {
+		"ecmaVersion": "latest",
+		"sourceType": "module"
+	},
+	"plugins": ["@typescript-eslint", "react", "prettier"],
+	"rules": {
+		"indent": "off", //Let prettier handle indentation
+		"react/jsx-indent": ["error", "tab"], // Indent JSX with tabs
+		"quotes": ["error", "double"],
+		"semi": ["error", "always"],
+		"react/jsx-indent-props": ["error", "tab"], // Indent JSX props with tabs
+		"react/jsx-curly-newline": [
+			"error",
+			{ "multiline": "consistent", "singleline": "consistent" }
+		], // Ensure consistent line breaks for JSX curly braces
+		"react/jsx-wrap-multilines": [
+			"error",
+			{
+				"declaration": "parens-new-line",
+				"assignment": "parens-new-line",
+				"return": "parens-new-line",
+				"arrow": "parens-new-line",
+				"condition": "parens-new-line",
+				"logical": "parens-new-line",
+				"prop": "parens-new-line"
+			}
+		], // Wrap JSX multi-line elements in parentheses and ensure consistent line breaks
+		"prettier/prettier": [
+			"error",
+			{},
+			{
+				"usePrettierrc": true
+			}
+		]
+	}
+}
+
