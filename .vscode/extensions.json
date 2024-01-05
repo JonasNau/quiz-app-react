@@ -1,0 +1,13 @@
+{
+	"recommendations": [
+		//ESLint
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode",
+
+		//Icons
+		"PKief.material-icon-theme",
+		//Typescript
+		"yoavbls.pretty-ts-errors"
+	]
+}
+
