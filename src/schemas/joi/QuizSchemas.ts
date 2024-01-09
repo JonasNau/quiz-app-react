@@ -7,7 +7,7 @@ export const AnswerEntrySchema = Joi.object({
 
 export const QuestionEntrySchema = Joi.object({
 	question: Joi.string().required(),
-	answers: Joi.array().items(AnswerEntrySchema),
+	answers: Joi.array().items(AnswerEntrySchema).required(),
 }).meta({ className: "QuestionEntry" });
 
 export const QuizDataSchema = Joi.array()

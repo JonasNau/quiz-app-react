@@ -3,7 +3,6 @@ import next from "next";
 import http from "http";
 import SocketIO, { Socket } from "socket.io";
 import { ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
-import { QuestionEntry, QuizData } from "@/interfaces/joi";
 import ServerLoggerProvider from "@/app/includes/ts/backend/logging/ServerLoggerProvider";
 import {
 	ApplicationMode,
@@ -12,6 +11,7 @@ import {
 import { validateObjectWithJoiType } from "@/app/includes/ts/backend/validation/SchemaValidation";
 import { QuizDataSchema } from "@/schemas/joi/QuizSchemas";
 import { error } from "console";
+import { QuestionEntry, QuizData } from "@/interfaces/joi/QuizSchemas";
 
 const port = 80;
 const app = next({ dev: true });
@@ -19,8 +19,10 @@ const handle = app.getRequestHandler();
 
 const ServerLogger = ServerLoggerProvider.getLogger();
 
-const QuizData: QuestionEntry[] = [];
+let quizData: QuizData | null = null;
 const currentQuestionNumber = 0;
+
+const getQuizData = () => quizData;
 
 app.prepare().then(() => {
 	const server = express();
@@ -48,10 +50,10 @@ app.prepare().then(() => {
 			socket.leave(roomName);
 		});
 
-		socket.on(ESocketEventNames.INIT_QUIZ, (quizData: unknown) => {
+		socket.on(ESocketEventNames.INIT_QUIZ, (newQuizData: unknown) => {
 			const validatedQuizData = validateObjectWithJoiType<QuizData>(
 				QuizDataSchema,
-				quizData
+				newQuizData
 			);
 
 			if (!validatedQuizData) {
@@ -62,6 +64,15 @@ app.prepare().then(() => {
 			quizData = validatedQuizData;
 
 			socket.emit(ESocketEventNames.SUCCESS, "UPDATED_DATA");
+		});
+
+		socket.on(ESocketEventNames.GET_QUIZ_DATA, () => {
+			if (!quizData) {
+				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
+				return;
+			}
+			console.log("here");
+			socket.emit(ESocketEventNames.SEND_QUIZ_DATA, quizData);
 		});
 	});
 

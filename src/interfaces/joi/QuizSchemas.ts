@@ -9,7 +9,7 @@ export interface AnswerEntry {
 }
 
 export interface QuestionEntry {
-  answers?: AnswerEntry[];
+  answers: AnswerEntry[];
   question: string;
 }
 

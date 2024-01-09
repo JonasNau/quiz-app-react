@@ -14,6 +14,20 @@ export async function showErrorMessageToUser({
 	});
 }
 
+export async function showWarningMessageToUser({
+	message,
+	title = "Warnung",
+}: {
+	message: string;
+	title?: string;
+}) {
+	return await Swal.fire({
+		title: title,
+		text: message,
+		icon: "warning",
+	});
+}
+
 export async function showSuccessMessageToUser({
 	message,
 	title = "Erfolg",
@@ -42,5 +56,22 @@ export async function showSuccessMessageAndAskUser({
 		title: title,
 		text: message,
 		icon: "success",
+	});
+}
+
+export async function showErrorMessageAndAskUser({
+	message,
+	title = "Fehler",
+}: {
+	message: string;
+	title?: string;
+}) {
+	return await Swal.fire({
+		showCancelButton: true,
+		cancelButtonText: "Abbrechen",
+		confirmButtonText: "OK",
+		title: title,
+		text: message,
+		icon: "error",
 	});
 }

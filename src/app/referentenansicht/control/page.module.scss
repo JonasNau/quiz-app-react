@@ -1,0 +1,28 @@
+.controller {
+	outline: 3px solid black;
+	border-radius: 20px;
+	:global {
+		.content {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			.btn-show-solution {
+				min-height: 3rem;
+				width: 75%;
+			}
+		}
+	}
+}
+
+.preview {
+	outline: 3px solid black;
+	border-radius: 20px;
+	overflow: auto;
+}
+
+.footer {
+	position: fixed;
+	bottom: 0;
+	text-align: center;
+	width: 100%;
+}

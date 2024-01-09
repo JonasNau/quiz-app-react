@@ -85,7 +85,7 @@ export default function InitQuiz() {
 		return () => {
 			socketIOClient.close();
 		};
-	}, []);
+	}, [router]);
 
 	const updateQuizJSONLocalStorage = (quizJSONString: string) => {
 		localStorage.setItem(QUIZJSONLocalStorageName, quizJSONString);
