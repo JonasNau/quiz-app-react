@@ -22,8 +22,6 @@ const ServerLogger = ServerLoggerProvider.getLogger();
 let quizData: QuizData | null = null;
 const currentQuestionNumber = 0;
 
-const getQuizData = () => quizData;
-
 app.prepare().then(() => {
 	const server = express();
 	const httpServer = http.createServer(server);
