@@ -17,6 +17,7 @@ import {
 	showErrorMessageAndAskUser,
 	showErrorMessageToUser,
 	showSuccessMessageAndAskUser,
+	showWarningMessageAndAskUser,
 	showWarningMessageToUser,
 } from "@/app/includes/ts/frontend/userFeedback/PopUp";
 import { DefaultErrorMessages } from "@/app/includes/ts/frontend/userFeedback/Messages";
@@ -38,6 +39,7 @@ export default function ControlView() {
 		const socketIOClient = io({});
 		setSocketIOClient(socketIOClient);
 		socketIOClient.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT_CONTROL);
+		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
 
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
@@ -54,6 +56,9 @@ export default function ControlView() {
 					router.push("/referentenansicht/init");
 				}
 				return;
+			} else if (errorName === "QUESTION_NUMBER_INVALID") {
+				showErrorMessageToUser({ message: "Der Server lehnt die Fragenummer ab." });
+				return;
 			}
 			showErrorMessageToUser({ message: DefaultErrorMessages.ERROR_RETRY_AGAIN_LATER });
 		});
@@ -64,34 +69,57 @@ export default function ControlView() {
 			setQuizData(quizData);
 		});
 
+		socketIOClient.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
+			setCurrentQuestionNumber(number);
+		});
+
+		socketIOClient.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (showSolutions: boolean) => {
+			setShowSolutions(showSolutions);
+		});
+
 		return () => {
 			socketIOClient.close();
 		};
 	}, [router]);
 
-	const handleShowSolutions = useCallback(
-		(event: SyntheticEvent<HTMLButtonElement>) => {
-			const newShowSolutions = !showSolutions;
-			setShowSolutions(newShowSolutions);
-		},
-		[showSolutions]
-	);
-
 	const handleNextQuestion = async () => {
-		if (currentQuestionNumber === getMaxQuestions()) {
-			const userFeedback = await showWarningMessageToUser({
+		const nextQuestionNumber = currentQuestionNumber + 1;
+		if (nextQuestionNumber === getMaxQuestions()) {
+			const userFeedback = await showWarningMessageAndAskUser({
 				message: "Es gibt keine weitere Frage. Möchtest du von vorne beginnen?",
 			});
 
 			if (userFeedback.isConfirmed) {
+				setCurrentQuestionNumber(0);
+				sendQuestionNumber(0);
 				return;
 			}
-
 			return;
 		}
+
+		sendShowSolutions(false);
+		setCurrentQuestionNumber(nextQuestionNumber);
+		sendQuestionNumber(nextQuestionNumber);
 	};
 
-	const handlePreviousQuestion = () => {};
+	const handlePreviousQuestion = async () => {
+		const previousQuestionNumber = currentQuestionNumber - 1;
+		if (previousQuestionNumber < 0) {
+			const userFeedback = await showWarningMessageAndAskUser({
+				message: "Du bist bereits am Anfang. Möchtest du zur letzten Frage springen?",
+			});
+
+			if (userFeedback.isConfirmed) {
+				const nextQuestionNumber = getMaxQuestions() - 1;
+				setCurrentQuestionNumber(nextQuestionNumber);
+				sendQuestionNumber(nextQuestionNumber);
+				return;
+			}
+			return;
+		}
+		setCurrentQuestionNumber(previousQuestionNumber);
+		sendQuestionNumber(previousQuestionNumber);
+	};
 
 	const socketIOClientIsDefinedAndConnected = (
 		socketIOClient: unknown
@@ -108,9 +136,32 @@ export default function ControlView() {
 			});
 			return;
 		}
-		//TODO: send question numer to server
-		// socketIOClient.emit()
+
+		socketIOClient.emit(ESocketEventNames.SEND_QUESTION_NUMBER, number);
 	};
+
+	const sendShowSolutions = useCallback(
+		(showSolutions: boolean) => {
+			if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
+				showErrorMessageToUser({
+					message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
+				});
+				return;
+			}
+
+			socketIOClient.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, showSolutions);
+		},
+		[socketIOClient]
+	);
+
+	const handleShowSolutions = useCallback(
+		(event: SyntheticEvent<HTMLButtonElement>) => {
+			const newShowSolutions = !showSolutions;
+			setShowSolutions(newShowSolutions);
+			sendShowSolutions(newShowSolutions);
+		},
+		[sendShowSolutions, showSolutions]
+	);
 
 	return (
 		<>
@@ -135,11 +186,15 @@ export default function ControlView() {
 								/>
 								<section className="d-flex justify-content-center">
 									<Button className="btn-show-solution m-2" onClick={handleShowSolutions}>
-										Lösung anzeigen / verstecken
+										Lösung {showSolutions ? "verstecken" : "anzeigen"}
 									</Button>
 								</section>
 								<section className="btn-prev-next">
-									<Button className="btn-previous m-2" variant="secondary">
+									<Button
+										className="btn-previous m-2"
+										variant="secondary"
+										onClick={handlePreviousQuestion}
+									>
 										Vorherige Frage
 									</Button>
 									<Button

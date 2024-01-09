@@ -27,6 +27,7 @@ export default function BeamerAnsicht() {
 
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
+		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
 			if (errorName === "NO_QUIZ_DATA") {
@@ -35,12 +36,32 @@ export default function BeamerAnsicht() {
 			}
 		});
 
+		socketIOClient.on("connect", () => {
+			socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
+		});
+
 		socketIOClient.on(ESocketEventNames.SUCCESS, async (successMessage: string) => {});
 
 		socketIOClient.on(ESocketEventNames.SEND_QUIZ_DATA, async (quizData: QuizData) => {
 			setQuizData(quizData);
 		});
+
+		socketIOClient.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
+			setCurrentQuestionNumber(number);
+		});
+
+		socketIOClient.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (showSolutions: boolean) => {
+			setShowSolutions(showSolutions);
+		});
 	}, []);
+
+	const socketIOClientIsDefinedAndConnected = (
+		socketIOClient: unknown
+	): socketIOClient is Socket => {
+		if (!socketIOClient) return false;
+		if (socketIOClient instanceof Socket && socketIOClient.connected) return true;
+		return false;
+	};
 
 	return (
 		<>

@@ -7,8 +7,11 @@
 
 	&.correct {
 		background-color: green;
+		font-weight: bold;
+		color: white;
 	}
 	&.wrong {
 		background-color: red;
+		font-weight: bold;
 	}
 }

@@ -2,7 +2,7 @@ import express from "express";
 import next from "next";
 import http from "http";
 import SocketIO, { Socket } from "socket.io";
-import { ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
+import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
 import ServerLoggerProvider from "@/app/includes/ts/backend/logging/ServerLoggerProvider";
 import {
 	ApplicationMode,
@@ -16,11 +16,13 @@ import { QuestionEntry, QuizData } from "@/interfaces/joi/QuizSchemas";
 const port = 80;
 const app = next({ dev: true });
 const handle = app.getRequestHandler();
-
 const ServerLogger = ServerLoggerProvider.getLogger();
 
 let quizData: QuizData | null = null;
-const currentQuestionNumber = 0;
+let currentQuestionNumber = 0;
+let showSolutions = false;
+
+const getMaxQuestions = () => (quizData ? quizData.length : 0);
 
 app.prepare().then(() => {
 	const server = express();
@@ -48,6 +50,33 @@ app.prepare().then(() => {
 			socket.leave(roomName);
 		});
 
+		const sendUpdateShowSolutions = (showSolutions: boolean) => {
+			socket
+				.in(ERoomNames.BEAMER)
+				.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, showSolutions);
+
+			socket
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, showSolutions);
+		};
+
+		const sendUpdateQuestionNumber = (questionNumber: number) => {
+			socket
+				.in(ERoomNames.BEAMER)
+				.emit(ESocketEventNames.SEND_QUESTION_NUMBER, questionNumber);
+
+			socket
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_QUESTION_NUMBER, questionNumber);
+		};
+
+		const sendUpdateQuizData = (quizData: QuizData) => {
+			socket
+				.in(ERoomNames.BEAMER)
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_QUIZ_DATA, quizData);
+		};
+
 		socket.on(ESocketEventNames.INIT_QUIZ, (newQuizData: unknown) => {
 			const validatedQuizData = validateObjectWithJoiType<QuizData>(
 				QuizDataSchema,
@@ -60,8 +89,10 @@ app.prepare().then(() => {
 			}
 
 			quizData = validatedQuizData;
+			currentQuestionNumber = 0;
 
 			socket.emit(ESocketEventNames.SUCCESS, "UPDATED_DATA");
+			sendUpdateQuizData(quizData);
 		});
 
 		socket.on(ESocketEventNames.GET_QUIZ_DATA, () => {
@@ -69,8 +100,37 @@ app.prepare().then(() => {
 				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
 				return;
 			}
-			console.log("here");
 			socket.emit(ESocketEventNames.SEND_QUIZ_DATA, quizData);
+		});
+
+		socket.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
+			if (!quizData) {
+				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
+				return;
+			}
+
+			const maxQuestions = getMaxQuestions();
+			if (typeof number !== "number" || number > maxQuestions || number < 0) {
+				socket.emit(ESocketEventNames.ERROR, "QUESTION_NUMBER_INVALID");
+				return;
+			}
+
+			currentQuestionNumber = number;
+			sendUpdateQuestionNumber(currentQuestionNumber);
+		});
+
+		socket.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (newShowSolutions: boolean) => {
+			if (!quizData) {
+				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
+				return;
+			}
+
+			showSolutions = newShowSolutions;
+			sendUpdateShowSolutions(showSolutions);
+		});
+
+		socket.on(ESocketEventNames.GET_QUESTION_NUMBER, () => {
+			socket.emit(ESocketEventNames.SEND_QUESTION_NUMBER, currentQuestionNumber);
 		});
 	});
 

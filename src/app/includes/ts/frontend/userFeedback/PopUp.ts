@@ -28,6 +28,23 @@ export async function showWarningMessageToUser({
 	});
 }
 
+export async function showWarningMessageAndAskUser({
+	message,
+	title = "Warnung",
+}: {
+	message: string;
+	title?: string;
+}) {
+	return await Swal.fire({
+		showCancelButton: true,
+		cancelButtonText: "Abbrechen",
+		confirmButtonText: "OK",
+		title: title,
+		text: message,
+		icon: "warning",
+	});
+}
+
 export async function showSuccessMessageToUser({
 	message,
 	title = "Erfolg",
