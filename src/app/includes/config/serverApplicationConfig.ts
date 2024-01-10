@@ -5,4 +5,4 @@ export const SERVER_APPLICATION_CONFIG = {
 		LOG_DIR: "logs",
 		LOG_LEVEL: ServerLogLevelsString.debug,
 	},
-} as const;
+};

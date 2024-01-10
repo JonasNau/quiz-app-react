@@ -13,8 +13,9 @@ import { QuizDataSchema } from "@/schemas/joi/QuizSchemas";
 import { error } from "console";
 import { QuestionEntry, QuizData } from "@/interfaces/joi/QuizSchemas";
 
-const port = 80;
-const app = next({ dev: true });
+const port = GLOBAL_APPLICATION_CONFIG.PORT;
+const isDev = GLOBAL_APPLICATION_CONFIG.MODE === ApplicationMode.DEV;
+const app = next({ dev: isDev, port: port });
 const handle = app.getRequestHandler();
 const ServerLogger = ServerLoggerProvider.getLogger();
 

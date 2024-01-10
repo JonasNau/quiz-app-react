@@ -3,13 +3,16 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"setup": "npm install && npm run \"joi-to-typescript:convert\"",
-		"dev": "concurrently  \"npm run dev:nextjs:express\" \"npm run dev:watch-schema\" -n \"Server,Build-Schamas\"",
+		"dev:setup": "npm install && npm run \"joi-to-typescript:convert\"",
+		"dev:start": "concurrently  \" npm run dev:nextjs:express\" \"npm run dev:watch-schema\" -n \"Server,Build-Schamas\"",
 		"dev:nextjs:express": "nodemon --exec \"npx ts-node -r tsconfig-paths/register ./src/server/application.ts\" --watch ./src/server --ext *",
 		"dev:watch-schema": "npx watch \"npm run joi-to-typescript:convert\" ./src/schemas/joi",
 		"joi-to-typescript:convert": "ts-node ./scripts/convertJoiTypesToTypescriptInterfaces.ts",
-		"build": "next build",
-		"start": "next start",
+		"build:next": "next build",
+		"build:express": "rimraf ./dist && tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json",
+		"build": "npm run build:next && npm run build:express",
+		"prod:start": "node ./dist/server/server/application.js",
+		"prod:build:start": "npm run build && npm run prod:start",
 		"lint": "next lint"
 	},
 	"dependencies": {
@@ -34,10 +37,12 @@
 		"react": "^18",
 		"react-bootstrap": "^2.9.2",
 		"react-dom": "^18",
+		"rimraf": "^5.0.5",
 		"socket.io": "^4.7.3",
 		"socket.io-client": "^4.7.3",
 		"sweetalert2": "^11.10.2",
 		"ts-node": "^10.9.2",
+		"tsc-alias": "^1.8.8",
 		"tsconfig-paths": "^4.2.0",
 		"winston": "^3.11.0",
 		"winston-daily-rotate-file": "^4.7.1"

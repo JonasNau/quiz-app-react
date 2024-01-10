@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"outDir": "./dist/server",
+		"target": "es5",
+		"allowJs": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"esModuleInterop": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["./src/server/**/*.ts"],
+	"exclude": ["node_modules"]
+}
