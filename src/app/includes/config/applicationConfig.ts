@@ -4,6 +4,6 @@ export enum ApplicationMode {
 }
 
 export const GLOBAL_APPLICATION_CONFIG = {
-	MODE: ApplicationMode.PRODUCTION,
+	MODE: ApplicationMode.DEV,
 	PORT: 80,
 };

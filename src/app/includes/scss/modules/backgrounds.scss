@@ -1,0 +1,17 @@
+.background-rainbow-animated {
+	background: linear-gradient(-45deg, #23cfd5, #23d58b, #23a6d5);
+	background-size: 400% 400%;
+	animation: background-rainbow-animated 30s ease infinite;
+}
+
+@keyframes background-rainbow-animated {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}

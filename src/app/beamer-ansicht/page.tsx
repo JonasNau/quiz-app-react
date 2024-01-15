@@ -17,8 +17,6 @@ export default function BeamerAnsicht() {
 		EWaitingMessage.WAITING_FOR_DATA
 	);
 
-	const getMaxQuestions = () => (quizData ? quizData.length : 0);
-
 	useEffect(() => {
 		//Create Socket IO Client
 		const socketIOClient = io({});
@@ -68,10 +66,12 @@ export default function BeamerAnsicht() {
 			<Container className={styles.componentContainer}>
 				<h1 className="text-center">Quiz</h1>
 				{quizData ? (
-					<QuizReadOnly
-						questionEntry={quizData[currentQuestionNumber]}
-						showSolutions={showSolutions}
-					/>
+					<div className={styles.quiz}>
+						<QuizReadOnly
+							questionEntry={quizData[currentQuestionNumber]}
+							showSolutions={showSolutions}
+						/>
+					</div>
 				) : (
 					<>
 						<div className={styles.waiting}>{waitingMessage}...</div>

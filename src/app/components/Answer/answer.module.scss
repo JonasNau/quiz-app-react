@@ -1,3 +1,5 @@
+@use "@/app//includes/scss/modules/colors" as colors;
+
 .answer {
 	border: 1px solid black;
 	padding: 1rem;
@@ -6,12 +8,13 @@
 	font-size: 1.5rem;
 
 	&.correct {
-		background-color: green;
+		background-color: colors.$correctColor;
 		font-weight: bold;
-		color: white;
+		color: black;
 	}
 	&.wrong {
-		background-color: red;
+		background-color: colors.$wrongColor;
 		font-weight: bold;
+		color: white;
 	}
 }

@@ -1,4 +1,5 @@
 "use client";
+
 import React, {
 	ChangeEvent,
 	SyntheticEvent,
@@ -23,6 +24,18 @@ import {
 import { DefaultErrorMessages } from "@/app/includes/ts/frontend/userFeedback/Messages";
 import { useRouter } from "next/navigation";
 import RootLink from "@/app/components/RootLink";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+	faArrowLeft,
+	faArrowRight,
+	faArrowsLeftRightToLine,
+	faEye,
+	faEyeSlash,
+	faRotateBack,
+	faRotateForward,
+	faRotateLeft,
+	faRotateRight,
+} from "@fortawesome/free-solid-svg-icons";
 
 export default function ControlView() {
 	const router = useRouter();
@@ -82,9 +95,16 @@ export default function ControlView() {
 		};
 	}, [router]);
 
+	const isLastQuestion = (questionNumber: number): boolean => {
+		return questionNumber === getMaxQuestions() - 1;
+	};
+
+	const isFirstQuestion = (questionNumber: number): boolean => {
+		return questionNumber === 0;
+	};
+
 	const handleNextQuestion = async () => {
-		const nextQuestionNumber = currentQuestionNumber + 1;
-		if (nextQuestionNumber === getMaxQuestions()) {
+		if (isLastQuestion(currentQuestionNumber)) {
 			const userFeedback = await showWarningMessageAndAskUser({
 				message: "Es gibt keine weitere Frage. Möchtest du von vorne beginnen?",
 			});
@@ -96,15 +116,14 @@ export default function ControlView() {
 			}
 			return;
 		}
-
+		const nextQuestionNumber = currentQuestionNumber + 1;
 		sendShowSolutions(false);
 		setCurrentQuestionNumber(nextQuestionNumber);
 		sendQuestionNumber(nextQuestionNumber);
 	};
 
 	const handlePreviousQuestion = async () => {
-		const previousQuestionNumber = currentQuestionNumber - 1;
-		if (previousQuestionNumber < 0) {
+		if (isFirstQuestion(currentQuestionNumber)) {
 			const userFeedback = await showWarningMessageAndAskUser({
 				message: "Du bist bereits am Anfang. Möchtest du zur letzten Frage springen?",
 			});
@@ -117,6 +136,7 @@ export default function ControlView() {
 			}
 			return;
 		}
+		const previousQuestionNumber = currentQuestionNumber - 1;
 		setCurrentQuestionNumber(previousQuestionNumber);
 		sendQuestionNumber(previousQuestionNumber);
 	};
@@ -168,63 +188,108 @@ export default function ControlView() {
 			<Container>
 				<h1 className="text-center">Referentenansicht - Steuerung</h1>
 				<Row>
-					<Col className="col-4">
-						<div className={styles.controller}>
-							<h2 className="text-center">Controller</h2>
-							<Container className="content">
-								<div>
-									Frage {currentQuestionNumber + 1} von {getMaxQuestions()}
-								</div>
-								<FormCheck
-									type="checkbox"
-									label="Lösung in der Vorschau anzeigen"
-									checked={showSolutionsInPreview}
-									onChange={(event: ChangeEvent<HTMLInputElement>) => {
-										let isChecked = event.target.checked;
-										setShowSolutionsInPreview(isChecked);
-									}}
-								/>
-								<section className="d-flex justify-content-center">
-									<Button className="btn-show-solution m-2" onClick={handleShowSolutions}>
-										Lösung {showSolutions ? "verstecken" : "anzeigen"}
-									</Button>
-								</section>
-								<section className="btn-prev-next">
-									<Button
-										className="btn-previous m-2"
-										variant="secondary"
-										onClick={handlePreviousQuestion}
-									>
-										Vorherige Frage
-									</Button>
-									<Button
-										className="btn-next m-2"
-										variant="secondary"
-										onClick={handleNextQuestion}
-									>
-										Nächste Frage
-									</Button>
-								</section>
-							</Container>
-						</div>
+					<Col className={`col-12 col-xl-4 ${styles.controller}`}>
+						<h2 className="text-center">Controller</h2>
+						<Container className="content">
+							<div>
+								Frage {currentQuestionNumber + 1} von {getMaxQuestions()}
+							</div>
+							<FormCheck
+								type="checkbox"
+								label="Lösung in der Vorschau anzeigen"
+								checked={showSolutionsInPreview}
+								onChange={(event: ChangeEvent<HTMLInputElement>) => {
+									let isChecked = event.target.checked;
+									setShowSolutionsInPreview(isChecked);
+								}}
+							/>
+							<b>Lösung {showSolutions ? "verstecken" : "anzeigen"}:</b>
+							<div>
+								{showSolutions ? (
+									<>
+										<Button
+											className="btn-show-solution m-2"
+											onClick={handleShowSolutions}
+											data-show-solutions={showSolutions}
+										>
+											<FontAwesomeIcon
+												icon={faEye}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</Button>
+									</>
+								) : (
+									<>
+										<Button
+											className="btn-show-solution m-2"
+											onClick={handleShowSolutions}
+											data-show-solutions={showSolutions}
+										>
+											<FontAwesomeIcon
+												icon={faEyeSlash}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</Button>
+									</>
+								)}
+							</div>
+
+							<section className="btn-prev-next">
+								<Button className="btn-previous m-2" onClick={handlePreviousQuestion}>
+									{isFirstQuestion(currentQuestionNumber) ? (
+										<>
+											<FontAwesomeIcon
+												icon={faRotateLeft}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</>
+									) : (
+										<>
+											{" "}
+											<FontAwesomeIcon
+												icon={faArrowLeft}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</>
+									)}
+								</Button>
+								<Button className="btn-next m-2" onClick={handleNextQuestion}>
+									{isLastQuestion(currentQuestionNumber) ? (
+										<>
+											<FontAwesomeIcon
+												icon={faRotateRight}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</>
+									) : (
+										<>
+											{" "}
+											<FontAwesomeIcon
+												icon={faArrowRight}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</>
+									)}
+								</Button>
+							</section>
+						</Container>
 					</Col>
-					<Col>
-						<div className={styles.preview}>
-							<h2 className="text-center">Vorschau</h2>
-							{quizData ? (
-								<QuizReadOnly
-									questionEntry={quizData[currentQuestionNumber]}
-									showSolutions={showSolutionsInPreview}
-								/>
-							) : (
-								<>
-									<p className="text-center">Bitte initialisiere das Quiz zuerst.</p>
-								</>
-							)}
-						</div>
+					<Col className={styles.preview}>
+						<h2 className="text-center">Vorschau</h2>
+						{quizData ? (
+							<QuizReadOnly
+								questionEntry={quizData[currentQuestionNumber]}
+								showSolutions={showSolutionsInPreview}
+							/>
+						) : (
+							<>
+								<p className="text-center">Bitte initialisiere das Quiz zuerst.</p>
+							</>
+						)}
 					</Col>
 				</Row>
 			</Container>
+
 			<footer className={styles.footer}>
 				<RootLink text="Zur Übersicht" />
 			</footer>
