@@ -1,0 +1,29 @@
+@use "@/app//includes/scss/modules/colors" as colors;
+
+.questionBuilder {
+	:global {
+		.answer-entry {
+			border-radius: 20px;
+			padding: 1rem;
+			margin-bottom: 1rem;
+			&[data-is-correct="true"] {
+				background-color: colors.$correctColor;
+			}
+			&[data-is-correct="false"] {
+				background-color: colors.$wrongColor;
+			}
+			.btn-group {
+				button.set-correct[data-is-correct="true"] {
+					background-color: colors.$correctColor;
+				}
+				button.set-correct[data-is-correct="false"] {
+					background-color: colors.$wrongColor;
+				}
+			}
+		}
+		.add-answer {
+			margin-top: 0.5rem;
+			margin-bottom: 0.5rem;
+		}
+	}
+}

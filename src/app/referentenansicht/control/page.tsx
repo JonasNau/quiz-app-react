@@ -7,7 +7,7 @@ import React, {
 	useEffect,
 	useState,
 } from "react";
-import { Button, Col, Container, FormCheck, Row } from "react-bootstrap";
+import { Button, Col, Container, Form, FormCheck, Row } from "react-bootstrap";
 
 import styles from "./page.module.scss";
 import QuizReadOnly from "@/app/components/QuizReadOnly/QuizReadOnly";
@@ -191,87 +191,94 @@ export default function ControlView() {
 					<Col className={`col-12 col-xl-4 ${styles.controller}`}>
 						<h2 className="text-center">Controller</h2>
 						<Container className="content">
-							<div>
-								Frage {currentQuestionNumber + 1} von {getMaxQuestions()}
-							</div>
-							<FormCheck
-								type="checkbox"
-								label="Lösung in der Vorschau anzeigen"
-								checked={showSolutionsInPreview}
-								onChange={(event: ChangeEvent<HTMLInputElement>) => {
-									let isChecked = event.target.checked;
-									setShowSolutionsInPreview(isChecked);
-								}}
-							/>
-							<b>Lösung {showSolutions ? "verstecken" : "anzeigen"}:</b>
-							<div>
-								{showSolutions ? (
-									<>
-										<Button
-											className="btn-show-solution m-2"
-											onClick={handleShowSolutions}
-											data-show-solutions={showSolutions}
-										>
-											<FontAwesomeIcon
-												icon={faEye}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</Button>
-									</>
-								) : (
-									<>
-										<Button
-											className="btn-show-solution m-2"
-											onClick={handleShowSolutions}
-											data-show-solutions={showSolutions}
-										>
-											<FontAwesomeIcon
-												icon={faEyeSlash}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</Button>
-									</>
-								)}
-							</div>
+							<Row>
+								<Col className="col-12 col-md-6 col-xl-12 d-flex flex-column align-items-center justify-content-center">
+									<div>
+										Frage <b>{currentQuestionNumber + 1}</b> von{" "}
+										<b>{getMaxQuestions()}</b>
+									</div>
+									<Form.Switch
+										className="showSolutionsPreview"
+										label="Lösung in der Vorschau anzeigen:"
+										checked={showSolutionsInPreview}
+										onChange={(event: ChangeEvent<HTMLInputElement>) => {
+											let isChecked = event.target.checked;
+											setShowSolutionsInPreview(isChecked);
+										}}
+									/>
+								</Col>
+								<Col className="col-12 col-md-6 col-xl-12 d-flex flex-column align-items-center">
+									<b>Lösung {showSolutions ? "verstecken" : "anzeigen"}:</b>
+									<div>
+										{showSolutions ? (
+											<>
+												<Button
+													className="btn-show-solution m-2"
+													onClick={handleShowSolutions}
+													data-show-solutions={showSolutions}
+												>
+													<FontAwesomeIcon
+														icon={faEye}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</Button>
+											</>
+										) : (
+											<>
+												<Button
+													className="btn-show-solution m-2"
+													onClick={handleShowSolutions}
+													data-show-solutions={showSolutions}
+												>
+													<FontAwesomeIcon
+														icon={faEyeSlash}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</Button>
+											</>
+										)}
+									</div>
 
-							<section className="btn-prev-next">
-								<Button className="btn-previous m-2" onClick={handlePreviousQuestion}>
-									{isFirstQuestion(currentQuestionNumber) ? (
-										<>
-											<FontAwesomeIcon
-												icon={faRotateLeft}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</>
-									) : (
-										<>
-											{" "}
-											<FontAwesomeIcon
-												icon={faArrowLeft}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</>
-									)}
-								</Button>
-								<Button className="btn-next m-2" onClick={handleNextQuestion}>
-									{isLastQuestion(currentQuestionNumber) ? (
-										<>
-											<FontAwesomeIcon
-												icon={faRotateRight}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</>
-									) : (
-										<>
-											{" "}
-											<FontAwesomeIcon
-												icon={faArrowRight}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</>
-									)}
-								</Button>
-							</section>
+									<section className="btn-prev-next">
+										<Button className="btn-previous m-2" onClick={handlePreviousQuestion}>
+											{isFirstQuestion(currentQuestionNumber) ? (
+												<>
+													<FontAwesomeIcon
+														icon={faRotateLeft}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</>
+											) : (
+												<>
+													{" "}
+													<FontAwesomeIcon
+														icon={faArrowLeft}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</>
+											)}
+										</Button>
+										<Button className="btn-next m-2" onClick={handleNextQuestion}>
+											{isLastQuestion(currentQuestionNumber) ? (
+												<>
+													<FontAwesomeIcon
+														icon={faRotateRight}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</>
+											) : (
+												<>
+													{" "}
+													<FontAwesomeIcon
+														icon={faArrowRight}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</>
+											)}
+										</Button>
+									</section>
+								</Col>
+							</Row>
 						</Container>
 					</Col>
 					<Col className={styles.preview}>

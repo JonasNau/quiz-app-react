@@ -7,7 +7,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { Button, ButtonToolbar, Container } from "react-bootstrap";
+import { Alert, Button, ButtonToolbar, Container } from "react-bootstrap";
 import CodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 import styles from "./page.module.scss";
 
@@ -25,6 +25,8 @@ import {
 import ClientLogger from "@/app/includes/ts/frontend/logging/ClientLoggerProvider";
 import { DefaultErrorMessages } from "@/app/includes/ts/frontend/userFeedback/Messages";
 import { useRouter } from "next/navigation";
+import QuizBuilder from "@/app/components/QuizBuilder/QuizBuilder";
+import { QuizData } from "@/interfaces/joi";
 
 const QUIZJSONLocalStorageName = "quiz-json";
 
@@ -47,6 +49,7 @@ const templateQuizData = [
 export default function InitQuiz() {
 	const router = useRouter();
 	const [quizJSONString, setQuizJSONString] = useState<string>("");
+	const [quizJSON, setQuizJSON] = useState<QuizData | null>();
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
 	const codeMirrorRef = useRef();
 
@@ -55,6 +58,13 @@ export default function InitQuiz() {
 		const quizJSONString = localStorage.getItem(QUIZJSONLocalStorageName) ?? "";
 		setQuizJSONString(quizJSONString);
 		updateQuizJSONLocalStorage(quizJSONString);
+
+		const quizJSON = getQuizJSONObjectFromQuizJSONString(quizJSONString);
+		if (quizJSON) {
+			setQuizJSON(quizJSON);
+		} else {
+			setQuizJSON(null);
+		}
 
 		//Create Socket IO Client
 		const socketIOClient = io({});
@@ -91,12 +101,32 @@ export default function InitQuiz() {
 		localStorage.setItem(QUIZJSONLocalStorageName, quizJSONString);
 	};
 
+	const getQuizJSONObjectFromQuizJSONString = (
+		quizJSONString: string
+	): QuizData | null => {
+		try {
+			const quzJSONObject = JSON.parse(quizJSONString);
+			const validationResult = QuizDataSchema.validate(quzJSONObject);
+			if (!validationResult.error) return validationResult.value;
+		} catch {}
+		return null;
+	};
+
 	const handleCodeUpdate = (value: string, viewUpdate: ViewUpdate) => {
 		setQuizJSONString(value);
+
+		const quizJSON = getQuizJSONObjectFromQuizJSONString(value);
+		if (quizJSON) {
+			setQuizJSON(quizJSON);
+		} else {
+			setQuizJSON(null);
+		}
+
 		updateQuizJSONLocalStorage(value);
 	};
 
 	const handleDelete = (event: SyntheticEvent<HTMLButtonElement>) => {
+		setQuizJSON([]);
 		setQuizJSONString("");
 		updateQuizJSONLocalStorage("");
 	};
@@ -111,7 +141,6 @@ export default function InitQuiz() {
 		}
 
 		const validationResult = QuizDataSchema.validate(quizJSON);
-
 		if (validationResult.error) {
 			ClientLogger.error("The quiz-json is not in a valid format.", validationResult);
 			showErrorMessageToUser({ message: validationResult.error.message });
@@ -177,6 +206,17 @@ export default function InitQuiz() {
 					onChange={handleCodeUpdate}
 					extensions={[json(), linter(jsonParseLinter()), lintGutter()]}
 				/>
+				<h2>Quiz grafisch bearbeiten</h2>
+				{quizJSON ? (
+					<>
+						{" "}
+						<QuizBuilder quizJSON={quizJSON} />
+					</>
+				) : (
+					<>
+						<Alert variant="warning">Die Quiz-JSON ist nicht valide.</Alert>
+					</>
+				)}
 			</Container>
 		</>
 	);

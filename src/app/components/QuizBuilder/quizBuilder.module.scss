@@ -1,0 +1,18 @@
+.quizBuilder {
+	background-color: white;
+	padding: 1rem;
+	border-radius: 20px;
+	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+	:global {
+		.question-entry {
+			background-color: white;
+			padding: 1rem;
+			border-radius: 20px;
+			box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+		}
+		.add-question {
+			margin-top: 2rem;
+			margin-bottom: 0.5rem;
+		}
+	}
+}

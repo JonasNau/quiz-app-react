@@ -1,7 +1,7 @@
 @use "@/app//includes/scss/modules/colors" as colors;
-@import "node_modules/bootstrap/scss/functions";
-@import "node_modules/bootstrap/scss/variables";
-@import "node_modules/bootstrap/scss/mixins";
+@import "/node_modules/bootstrap/scss/functions";
+@import "/node_modules/bootstrap/scss/variables";
+@import "/node_modules/bootstrap/scss/mixins";
 
 .controller {
 	background-color: rgba(255, 255, 255, 0.932);
@@ -9,14 +9,16 @@
 	border: 1px solid black;
 	border-radius: 20px;
 	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+	padding: 1rem;
 	@include media-breakpoint-down(xl) {
 		margin-bottom: 2rem;
 	}
 	:global {
 		.content {
 			display: flex;
-			flex-direction: column;
+			flex-direction: row;
 			align-items: center;
+			justify-content: center;
 			.btn-show-solution {
 				height: 70px;
 				width: 70px;
@@ -27,6 +29,21 @@
 				}
 				&[data-show-solutions="false"] {
 					background-color: colors.$wrongColor;
+				}
+			}
+			.showSolutionsPreview {
+				display: flex;
+				flex-direction: column-reverse;
+				align-items: center;
+				padding: 1rem;
+				label {
+					font-weight: bold;
+					text-align: center;
+				}
+				input[type="checkbox"] {
+					height: 25px;
+					width: 50px;
+					margin: 0.25rem;
 				}
 			}
 			.btn-prev-next {
