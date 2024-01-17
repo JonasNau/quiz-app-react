@@ -1,7 +1,11 @@
 @use "@/app//includes/scss/modules/colors" as colors;
 
-.questionBuilder {
+.questionEditor {
 	:global {
+		.question textarea {
+			font-size: 1.5rem;
+			height: auto;
+		}
 		.answer-entry {
 			border-radius: 20px;
 			padding: 1rem;

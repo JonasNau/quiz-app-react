@@ -1,0 +1,37 @@
+.quizEditor {
+	background-color: white;
+	padding: 1rem;
+	border-radius: 20px;
+	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+	margin-bottom: 2rem;
+	:global {
+		.overview {
+			.question-entry {
+				border-bottom: 1px solid black;
+				padding-bottom: 0.25rem;
+				padding-top: 0.25rem;
+				.wrapper {
+					padding: 0.5rem;
+					border-radius: 20px;
+					&:hover {
+						background-color: rgba(0, 0, 0, 0.1);
+					}
+					&:active {
+						background-color: rgba(0, 0, 0, 0.4);
+					}
+				}
+
+				.index {
+					font-size: 1.5rem;
+					margin-right: 1rem;
+				}
+				.question {
+					font-size: 1.5rem;
+					flex-grow: 1;
+					word-break: break-all;
+					word-wrap: break-word;
+				}
+			}
+		}
+	}
+}

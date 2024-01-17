@@ -25,7 +25,7 @@ import {
 import ClientLogger from "@/app/includes/ts/frontend/logging/ClientLoggerProvider";
 import { DefaultErrorMessages } from "@/app/includes/ts/frontend/userFeedback/Messages";
 import { useRouter } from "next/navigation";
-import QuizBuilder from "@/app/components/QuizBuilder/QuizBuilder";
+import QuizEditor from "@/app/components/QuizEditor/QuizEditor";
 import { QuizData } from "@/interfaces/joi";
 
 const QUIZJSONLocalStorageName = "quiz-json";
@@ -52,6 +52,10 @@ export default function InitQuiz() {
 	const [quizJSON, setQuizJSON] = useState<QuizData | null>();
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
 	const codeMirrorRef = useRef();
+
+	const updateQuizJSONLocalStorage = useCallback((quizJSONString: string) => {
+		localStorage.setItem(QUIZJSONLocalStorageName, quizJSONString);
+	}, []);
 
 	useEffect(() => {
 		//Read quiz-json from local storage
@@ -95,11 +99,7 @@ export default function InitQuiz() {
 		return () => {
 			socketIOClient.close();
 		};
-	}, [router]);
-
-	const updateQuizJSONLocalStorage = (quizJSONString: string) => {
-		localStorage.setItem(QUIZJSONLocalStorageName, quizJSONString);
-	};
+	}, [router, updateQuizJSONLocalStorage]);
 
 	const getQuizJSONObjectFromQuizJSONString = (
 		quizJSONString: string
@@ -126,7 +126,7 @@ export default function InitQuiz() {
 	};
 
 	const handleDelete = (event: SyntheticEvent<HTMLButtonElement>) => {
-		setQuizJSON([]);
+		setQuizJSON(null);
 		setQuizJSONString("");
 		updateQuizJSONLocalStorage("");
 	};
@@ -168,18 +168,44 @@ export default function InitQuiz() {
 		try {
 			const formatted = JSON.stringify(JSON.parse(quizJSONString), null, 2);
 			setQuizJSONString(formatted);
+			updateQuizJSONLocalStorage(formatted);
 		} catch (error) {
 			showErrorMessageToUser({
 				message: "Die JSON-Datei kann nicht formatiert werden, da sie nicht valide ist.",
 			});
 		}
-	}, [quizJSONString]);
+	}, [quizJSONString, updateQuizJSONLocalStorage]);
 
-	const handleTemplate = useCallback((event: SyntheticEvent<HTMLButtonElement>) => {
-		const newData = JSON.stringify(templateQuizData);
-		setQuizJSONString(newData);
-		updateQuizJSONLocalStorage(newData);
-	}, []);
+	const handleFormatCodeMinify = useCallback(async () => {
+		try {
+			const formatted = JSON.stringify(JSON.parse(quizJSONString));
+			setQuizJSONString(formatted);
+			updateQuizJSONLocalStorage(formatted);
+		} catch (error) {
+			showErrorMessageToUser({
+				message: "Die JSON-Datei kann nicht formatiert werden, da sie nicht valide ist.",
+			});
+		}
+	}, [quizJSONString, updateQuizJSONLocalStorage]);
+
+	const handleTemplate = useCallback(
+		(event: SyntheticEvent<HTMLButtonElement>) => {
+			const newData = JSON.stringify(templateQuizData);
+			setQuizJSON(templateQuizData);
+			setQuizJSONString(newData);
+			updateQuizJSONLocalStorage(newData);
+		},
+		[updateQuizJSONLocalStorage]
+	);
+
+	const onQuizDataUpdate = useCallback(
+		(quizData: QuizData) => {
+			setQuizJSON(quizData);
+			setQuizJSONString(JSON.stringify(quizData));
+			updateQuizJSONLocalStorage(JSON.stringify(quizData));
+		},
+		[setQuizJSON, setQuizJSONString, updateQuizJSONLocalStorage]
+	);
 
 	return (
 		<>
@@ -198,6 +224,9 @@ export default function InitQuiz() {
 					<Button variant="secondary" className="me-2" onClick={handleAutoFormatCode}>
 						Formatieren
 					</Button>
+					<Button variant="secondary" className="me-2" onClick={handleFormatCodeMinify}>
+						Verkleinern
+					</Button>
 				</ButtonToolbar>
 				<h2>Quiz-JSON bearbeiten</h2>
 				<CodeMirror
@@ -209,8 +238,7 @@ export default function InitQuiz() {
 				<h2>Quiz grafisch bearbeiten</h2>
 				{quizJSON ? (
 					<>
-						{" "}
-						<QuizBuilder quizJSON={quizJSON} />
+						<QuizEditor onQuizDataUpdate={onQuizDataUpdate} quizJSON={quizJSON} />
 					</>
 				) : (
 					<>
