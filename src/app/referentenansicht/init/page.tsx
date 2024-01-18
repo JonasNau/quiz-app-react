@@ -59,7 +59,7 @@ export default function InitQuiz() {
 
 	useEffect(() => {
 		//Read quiz-json from local storage
-		const quizJSONString = localStorage.getItem(QUIZJSONLocalStorageName) ?? "";
+		const quizJSONString = localStorage.getItem(QUIZJSONLocalStorageName) ?? "[]";
 		setQuizJSONString(quizJSONString);
 		updateQuizJSONLocalStorage(quizJSONString);
 

@@ -4,25 +4,44 @@
 	:global {
 		.question textarea {
 			font-size: 1.5rem;
-			height: auto;
+			overflow: hidden;
 		}
 		.answer-entry {
 			border-radius: 20px;
 			padding: 1rem;
 			margin-bottom: 1rem;
+			margin-top: 1rem;
+
+			display: flex;
+			flex-direction: row;
+
 			&[data-is-correct="true"] {
-				background-color: colors.$correctColor;
+				border: 5px solid colors.$correctColor;
 			}
 			&[data-is-correct="false"] {
-				background-color: colors.$wrongColor;
+				border: 5px solid colors.$wrongColor;
 			}
-			.btn-group {
-				button.set-correct[data-is-correct="true"] {
-					background-color: colors.$correctColor;
+
+			.content {
+				flex-grow: 1;
+				.answer-input {
+					overflow: hidden;
+					font-size: 1.35rem;
 				}
-				button.set-correct[data-is-correct="false"] {
-					background-color: colors.$wrongColor;
+				.btn-group {
+					button.set-correct[data-is-correct="true"] {
+						background-color: colors.$correctColor;
+					}
+					button.set-correct[data-is-correct="false"] {
+						background-color: colors.$wrongColor;
+					}
 				}
+			}
+			.drag-icon {
+				margin-left: 0.5rem;
+				padding: 0.25rem;
+				align-self: center;
+				justify-self: center;
 			}
 		}
 		.add-answer {

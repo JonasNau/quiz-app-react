@@ -13,6 +13,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import styles from "./quizEditor.module.scss";
 import { moveArrayItem } from "@/app/includes/ts/object-utils";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
 
 export type OnQuizDataUpdate = (quizData: QuizData) => void;
 
@@ -30,6 +33,11 @@ export default function QuizEditor({
 	);
 
 	useEffect(() => {
+		//Replace the quizJSON on rerender if the quizJSON object changed
+		setQuizData(quizJSON);
+	}, [quizJSON]);
+
+	useEffect(() => {
 		onQuizDataUpdate(quizData);
 	}, [onQuizDataUpdate, quizData]);
 
@@ -42,16 +50,6 @@ export default function QuizEditor({
 	const editQuestion = (questionNumber: number) => {
 		setSelectedQuestionNumber(questionNumber);
 		setEditorIsOpen(true);
-	};
-
-	const moveQuestionOrder = (
-		currentQuestionNumber: number,
-		newQuestionNumber: number
-	) => {};
-
-	const onEditorClose = () => {
-		setEditorIsOpen(false);
-		setSelectedQuestionNumber(null);
 	};
 
 	const onQuestionEntryUpdate = useCallback(
@@ -86,88 +84,101 @@ export default function QuizEditor({
 		<div className={styles.quizEditor}>
 			<h2>Übersicht</h2>
 			<div className="overview">
-				{quizData.map((questionEntry, index) => {
-					return (
-						<div key={index}>
-							<div className="question-entry">
-								<div className="wrapper  d-flex align-items-center justify-content-cente">
-									<div className="index">{index + 1}</div>
-									<div className="question">{questionEntry.question}</div>
-									<ButtonGroup>
-										{editorShouldBeOpenOnIndex(index) ? (
-											<>
+				<DndProvider backend={HTML5Backend}>
+					{quizData.map((questionEntry, index) => {
+						return (
+							<div key={index}>
+								<DraggableListItem
+									type="question-entry"
+									index={index}
+									id={index}
+									moveListItem={(dragIndex: number, hoverIndex: number) => {
+										setQuizData((prev) => {
+											return moveArrayItem(prev, dragIndex, hoverIndex);
+										});
+									}}
+								>
+									<div className="question-entry">
+										<div className="wrapper  d-flex align-items-center justify-content-cente">
+											<div className="index">{index + 1}</div>
+											<div className="question">{questionEntry.question}</div>
+											<ButtonGroup>
+												{editorShouldBeOpenOnIndex(index) ? (
+													<>
+														<Button
+															variant="primary"
+															onClick={(event) => {
+																setEditorIsOpen(false);
+																setSelectedQuestionNumber(null);
+															}}
+														>
+															<FontAwesomeIcon icon={faX} />
+														</Button>
+													</>
+												) : (
+													<>
+														<Button
+															variant="success"
+															onClick={(
+																event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+															) => {
+																editQuestion(index);
+															}}
+														>
+															<FontAwesomeIcon icon={faPencil} />
+														</Button>
+													</>
+												)}
+
 												<Button
 													variant="primary"
+													disabled={isFirstQuestion(index)}
 													onClick={(event) => {
-														setEditorIsOpen(false);
-														setSelectedQuestionNumber(null);
+														if (isFirstQuestion(index)) return;
+														setQuizData((prev) => {
+															return moveArrayItem(prev, index, index - 1);
+														});
 													}}
 												>
-													<FontAwesomeIcon icon={faX} />
+													<FontAwesomeIcon icon={faArrowUp} />
 												</Button>
-											</>
-										) : (
-											<>
 												<Button
-													variant="success"
-													onClick={(
-														event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-													) => {
-														editQuestion(index);
+													variant="primary"
+													disabled={isLastQuestion(index)}
+													onClick={(event) => {
+														if (isLastQuestion(index)) return;
+														setQuizData((prev) => {
+															return moveArrayItem(prev, index, index + 1);
+														});
 													}}
 												>
-													<FontAwesomeIcon icon={faPencil} />
+													<FontAwesomeIcon icon={faArrowDown} />
 												</Button>
-											</>
-										)}
-
-										<Button
-											variant="primary"
-											disabled={isFirstQuestion(index)}
-											onClick={(event) => {
-												if (isFirstQuestion(index)) return;
-												setQuizData((prev) => {
-													return moveArrayItem(prev, index, index - 1);
-												});
-											}}
-										>
-											<FontAwesomeIcon icon={faArrowUp} />
-										</Button>
-										<Button
-											variant="primary"
-											disabled={isLastQuestion(index)}
-											onClick={(event) => {
-												if (isLastQuestion(index)) return;
-												setQuizData((prev) => {
-													return moveArrayItem(prev, index, index + 1);
-												});
-											}}
-										>
-											<FontAwesomeIcon icon={faArrowDown} />
-										</Button>
-										<Button
-											variant="danger"
-											onClick={(event) => deleteQuestionEntryAtIndex(index)}
-										>
-											<FontAwesomeIcon icon={faTrashCan} />
-										</Button>
-									</ButtonGroup>
-								</div>
-							</div>
-							{editorShouldBeOpenOnIndex(index) && (
-								<>
-									<h3 className="text-center">Bearbeiten</h3>
-									<div className="question-editor-wrapper">
-										<QuestionEditor
-											onQuestionEntryUpdate={onQuestionEntryUpdate}
-											questionEntryJSON={questionEntry}
-										/>
+												<Button
+													variant="danger"
+													onClick={(event) => deleteQuestionEntryAtIndex(index)}
+												>
+													<FontAwesomeIcon icon={faTrashCan} />
+												</Button>
+											</ButtonGroup>
+										</div>
 									</div>
-								</>
-							)}
-						</div>
-					);
-				})}
+								</DraggableListItem>
+								{editorShouldBeOpenOnIndex(index) && (
+									<>
+										<h3 className="text-center">Bearbeiten</h3>
+										<div className="question-editor-wrapper">
+											<QuestionEditor
+												onQuestionEntryUpdate={onQuestionEntryUpdate}
+												questionEntryJSON={questionEntry}
+											/>
+										</div>
+									</>
+								)}
+							</div>
+						);
+					})}
+				</DndProvider>
 			</div>
 			<hr />
 			<section className="d-flex flex-column align-items-center">

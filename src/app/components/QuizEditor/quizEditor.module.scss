@@ -8,8 +8,8 @@
 		.overview {
 			.question-entry {
 				border-bottom: 1px solid black;
-				padding-bottom: 0.25rem;
-				padding-top: 0.25rem;
+				padding-bottom: 0.5rem;
+				padding-top: 0.5rem;
 				.wrapper {
 					padding: 0.5rem;
 					border-radius: 20px;
@@ -30,6 +30,10 @@
 					flex-grow: 1;
 					word-break: break-all;
 					word-wrap: break-word;
+					white-space: nowrap; /* Keeps the text in a single line */
+					overflow: hidden; /* Hides text that goes beyond the div */
+					text-overflow: ellipsis; /* Adds '...' at the end of the hidden text */
+					width: auto;
 				}
 			}
 		}
