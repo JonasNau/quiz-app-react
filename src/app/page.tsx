@@ -6,7 +6,14 @@ import Link from "next/link";
 export default function Home() {
 	return (
 		<>
-			<Container>
+			<Container
+				style={{
+					backgroundColor: "white",
+					marginTop: "1rem",
+					borderRadius: "20px",
+					padding: "1rem",
+				}}
+			>
 				<h1 className="text-center">Quiz-Anwendung</h1>
 				<p>
 					Dies ist eine Quiz-Anwendung bestehend aus zwei Teilen. Eine Referentenansicht
