@@ -26,7 +26,7 @@ export default function DraggableListItem({
 
 	const [drop, setDrop] = useDrop({
 		accept: type,
-		hover: (item: { id: number; index: number }, monitor: DropTargetMonitor) => {
+		drop: (item: { id: number; index: number }, monitor: DropTargetMonitor) => {
 			if (item.id === id) {
 				return;
 			}

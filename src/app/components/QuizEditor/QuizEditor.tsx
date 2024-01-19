@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faArrowDown,
 	faArrowUp,
+	faGripLinesVertical,
 	faPencil,
 	faPlus,
 	faTrashCan,
@@ -98,69 +99,72 @@ export default function QuizEditor({
 										});
 									}}
 								>
-									<div className="question-entry">
-										<div className="wrapper  d-flex align-items-center justify-content-cente">
-											<div className="index">{index + 1}</div>
-											<div className="question">{questionEntry.question}</div>
-											<ButtonGroup>
-												{editorShouldBeOpenOnIndex(index) ? (
-													<>
-														<Button
-															variant="primary"
-															onClick={(event) => {
-																setEditorIsOpen(false);
-																setSelectedQuestionNumber(null);
-															}}
-														>
-															<FontAwesomeIcon icon={faX} />
-														</Button>
-													</>
-												) : (
-													<>
-														<Button
-															variant="success"
-															onClick={(
-																event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-															) => {
-																editQuestion(index);
-															}}
-														>
-															<FontAwesomeIcon icon={faPencil} />
-														</Button>
-													</>
-												)}
+									<div className="border-bottom-provider">
+										<div className="question-entry">
+											<div className="content d-flex align-items-center justify-content-center">
+												<div className="index">{index + 1}</div>
+												<div className="question">{questionEntry.question}</div>
+												<ButtonGroup>
+													{editorShouldBeOpenOnIndex(index) ? (
+														<>
+															<Button
+																variant="primary"
+																onClick={(event) => {
+																	setEditorIsOpen(false);
+																	setSelectedQuestionNumber(null);
+																}}
+															>
+																<FontAwesomeIcon icon={faX} />
+															</Button>
+														</>
+													) : (
+														<>
+															<Button
+																variant="success"
+																onClick={(
+																	event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+																) => {
+																	editQuestion(index);
+																}}
+															>
+																<FontAwesomeIcon icon={faPencil} />
+															</Button>
+														</>
+													)}
 
-												<Button
-													variant="primary"
-													disabled={isFirstQuestion(index)}
-													onClick={(event) => {
-														if (isFirstQuestion(index)) return;
-														setQuizData((prev) => {
-															return moveArrayItem(prev, index, index - 1);
-														});
-													}}
-												>
-													<FontAwesomeIcon icon={faArrowUp} />
-												</Button>
-												<Button
-													variant="primary"
-													disabled={isLastQuestion(index)}
-													onClick={(event) => {
-														if (isLastQuestion(index)) return;
-														setQuizData((prev) => {
-															return moveArrayItem(prev, index, index + 1);
-														});
-													}}
-												>
-													<FontAwesomeIcon icon={faArrowDown} />
-												</Button>
-												<Button
-													variant="danger"
-													onClick={(event) => deleteQuestionEntryAtIndex(index)}
-												>
-													<FontAwesomeIcon icon={faTrashCan} />
-												</Button>
-											</ButtonGroup>
+													<Button
+														variant="primary"
+														disabled={isFirstQuestion(index)}
+														onClick={(event) => {
+															if (isFirstQuestion(index)) return;
+															setQuizData((prev) => {
+																return moveArrayItem(prev, index, index - 1);
+															});
+														}}
+													>
+														<FontAwesomeIcon icon={faArrowUp} />
+													</Button>
+													<Button
+														variant="primary"
+														disabled={isLastQuestion(index)}
+														onClick={(event) => {
+															if (isLastQuestion(index)) return;
+															setQuizData((prev) => {
+																return moveArrayItem(prev, index, index + 1);
+															});
+														}}
+													>
+														<FontAwesomeIcon icon={faArrowDown} />
+													</Button>
+													<Button
+														variant="danger"
+														onClick={(event) => deleteQuestionEntryAtIndex(index)}
+													>
+														<FontAwesomeIcon icon={faTrashCan} />
+													</Button>
+												</ButtonGroup>
+											</div>
+											<FontAwesomeIcon className="drag-icon" icon={faGripLinesVertical} />
 										</div>
 									</div>
 								</DraggableListItem>
