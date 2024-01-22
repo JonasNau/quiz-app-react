@@ -14,3 +14,11 @@ export interface QuestionEntry {
 }
 
 export type QuizData = QuestionEntry[];
+
+export interface QuizPackage {
+  description: string;
+  name: string;
+  quizData: QuizData;
+}
+
+export type QuizPackageList = QuizPackage[];

@@ -19,7 +19,7 @@ import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-he
 
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import DraggableListItem from "../../DragAndDrop/Draggable/DraggableListItem";
+import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
 
 export type OnQuestionEntryUpdate = (questionEntry: QuestionEntry) => void;
 export type OnEditorClose = () => void;

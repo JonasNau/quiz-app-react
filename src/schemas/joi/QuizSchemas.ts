@@ -13,3 +13,13 @@ export const QuestionEntrySchema = Joi.object({
 export const QuizDataSchema = Joi.array()
 	.items(QuestionEntrySchema)
 	.meta({ className: "QuizData" });
+
+export const QuizPackageSchema = Joi.object({
+	name: Joi.string().required().allow(""),
+	description: Joi.string().required().allow(""),
+	quizData: QuizDataSchema.required(),
+}).meta({ className: "QuizPackage" });
+
+export const QuizPackageListSchema = Joi.array()
+	.items(QuizPackageSchema)
+	.meta({ className: "QuizPackageList" });

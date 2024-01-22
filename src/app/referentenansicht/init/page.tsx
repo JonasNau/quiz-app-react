@@ -7,7 +7,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { Alert, Button, ButtonToolbar, Container } from "react-bootstrap";
+import { Alert, Button, ButtonToolbar, Container, Modal } from "react-bootstrap";
 import CodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 import styles from "./page.module.scss";
 
@@ -16,7 +16,6 @@ import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { io, Socket } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
-import { QuizDataSchema } from "@/schemas/joi/QuizSchemas";
 import {
 	showErrorMessageToUser,
 	showSuccessMessageAndAskUser,
@@ -25,49 +24,63 @@ import {
 import ClientLogger from "@/app/includes/ts/frontend/logging/ClientLoggerProvider";
 import { DefaultErrorMessages } from "@/app/includes/ts/frontend/userFeedback/Messages";
 import { useRouter } from "next/navigation";
-import QuizEditor from "@/app/components/QuizEditor/QuizEditor";
-import { QuizData } from "@/interfaces/joi";
+import QuizPackageEditor from "@/app/components/QuizPackageEditor/QuizPackageEditor";
+import QuizPackageListEditor from "@/app/components/QuizPackageListEditor/QuizPackageListEditor";
+import { QuizPackage, QuizPackageList } from "@/interfaces/joi";
+import { QuizPackageListSchema } from "@/schemas/joi/QuizSchemas";
 
-const QUIZJSONLocalStorageName = "quiz-json";
+const QuizPackageList_LocalStorage_Name = "quiz-json-list";
 
-const templateQuizData = [
-	{
-		question: "Frage?",
-		answers: [
-			{
-				text: "Antwort 1",
-				isCorrect: true,
-			},
-			{
-				text: "Antwort 2",
-				isCorrect: false,
-			},
-		],
-	},
-];
+const templateQuizPackage = {
+	name: "Name",
+	description: "",
+	quizData: [
+		{
+			question: "Frage?",
+			answers: [
+				{
+					text: "Antwort 1",
+					isCorrect: true,
+				},
+				{
+					text: "Antwort 2",
+					isCorrect: false,
+				},
+			],
+		},
+	],
+} satisfies QuizPackage;
+
+const templateQuizPackageList = [templateQuizPackage] satisfies QuizPackageList;
 
 export default function InitQuiz() {
 	const router = useRouter();
-	const [quizJSONString, setQuizJSONString] = useState<string>("");
-	const [quizJSON, setQuizJSON] = useState<QuizData | null>();
+	const [quizPackageListString, setQuizPackageListString] = useState<string>("");
+	const [quizPackageList, setQuizPackageList] = useState<QuizPackageList | null>();
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
-	const codeMirrorRef = useRef();
 
-	const updateQuizJSONLocalStorage = useCallback((quizJSONString: string) => {
-		localStorage.setItem(QUIZJSONLocalStorageName, quizJSONString);
-	}, []);
+	const updateQuizPackageListLocalStorage = useCallback(
+		(quizPackageListLocalStorageString: string) => {
+			localStorage.setItem(
+				QuizPackageList_LocalStorage_Name,
+				quizPackageListLocalStorageString
+			);
+		},
+		[]
+	);
 
 	useEffect(() => {
 		//Read quiz-json from local storage
-		const quizJSONString = localStorage.getItem(QUIZJSONLocalStorageName) ?? "[]";
-		setQuizJSONString(quizJSONString);
-		updateQuizJSONLocalStorage(quizJSONString);
+		const quizJSONListString =
+			localStorage.getItem(QuizPackageList_LocalStorage_Name) ?? "[]";
+		setQuizPackageListString(quizJSONListString);
+		updateQuizPackageListLocalStorage(quizJSONListString);
 
-		const quizJSON = getQuizJSONObjectFromQuizJSONString(quizJSONString);
-		if (quizJSON) {
-			setQuizJSON(quizJSON);
+		const quizJSONList = getQuizPackageListFromString(quizJSONListString);
+		if (quizJSONList) {
+			setQuizPackageList(quizJSONList);
 		} else {
-			setQuizJSON(null);
+			setQuizPackageList(null);
 		}
 
 		//Create Socket IO Client
@@ -99,54 +112,37 @@ export default function InitQuiz() {
 		return () => {
 			socketIOClient.close();
 		};
-	}, [router, updateQuizJSONLocalStorage]);
+	}, [router, updateQuizPackageListLocalStorage]);
 
-	const getQuizJSONObjectFromQuizJSONString = (
-		quizJSONString: string
-	): QuizData | null => {
+	const getQuizPackageListFromString = (string: string): QuizPackageList | null => {
 		try {
-			const quzJSONObject = JSON.parse(quizJSONString);
-			const validationResult = QuizDataSchema.validate(quzJSONObject);
+			const quzJSONListObject = JSON.parse(string);
+			const validationResult = QuizPackageListSchema.validate(quzJSONListObject);
 			if (!validationResult.error) return validationResult.value;
 		} catch {}
 		return null;
 	};
 
 	const handleCodeUpdate = (value: string, viewUpdate: ViewUpdate) => {
-		setQuizJSONString(value);
+		setQuizPackageListString(value);
 
-		const quizJSON = getQuizJSONObjectFromQuizJSONString(value);
+		const quizJSON = getQuizPackageListFromString(value);
 		if (quizJSON) {
-			setQuizJSON(quizJSON);
+			setQuizPackageList(quizJSON);
 		} else {
-			setQuizJSON(null);
+			setQuizPackageList(null);
 		}
 
-		updateQuizJSONLocalStorage(value);
+		updateQuizPackageListLocalStorage(value);
 	};
 
 	const handleDelete = (event: SyntheticEvent<HTMLButtonElement>) => {
-		setQuizJSON(null);
-		setQuizJSONString("");
-		updateQuizJSONLocalStorage("");
+		setQuizPackageList([]);
+		setQuizPackageListString("[]");
+		updateQuizPackageListLocalStorage("[]");
 	};
 
-	const handleInitQuiz = (event: SyntheticEvent) => {
-		let quizJSON = null;
-		try {
-			quizJSON = JSON.parse(quizJSONString);
-		} catch (error) {
-			showErrorMessageToUser({ message: (error as Error).message });
-			return;
-		}
-
-		const validationResult = QuizDataSchema.validate(quizJSON);
-		if (validationResult.error) {
-			ClientLogger.error("The quiz-json is not in a valid format.", validationResult);
-			showErrorMessageToUser({ message: validationResult.error.message });
-			return;
-		}
-
+	const sendQuizPackageToServer = (quizPackage: QuizPackage) => {
 		if (!socketIOClient) {
 			showErrorMessageToUser({
 				message: DefaultErrorMessages.CONNECTION_NOT_INITIALIZED,
@@ -161,60 +157,71 @@ export default function InitQuiz() {
 			return;
 		}
 
-		socketIOClient.emit(ESocketEventNames.INIT_QUIZ, quizJSON);
+		socketIOClient.emit(ESocketEventNames.INIT_QUIZ, quizPackage);
 	};
 
 	const handleAutoFormatCode = useCallback(async () => {
 		try {
-			const formatted = JSON.stringify(JSON.parse(quizJSONString), null, 2);
-			setQuizJSONString(formatted);
-			updateQuizJSONLocalStorage(formatted);
+			const formatted = JSON.stringify(JSON.parse(quizPackageListString), null, 2);
+			setQuizPackageListString(formatted);
+			updateQuizPackageListLocalStorage(formatted);
 		} catch (error) {
 			showErrorMessageToUser({
 				message: "Die JSON-Datei kann nicht formatiert werden, da sie nicht valide ist.",
 			});
 		}
-	}, [quizJSONString, updateQuizJSONLocalStorage]);
+	}, [quizPackageListString, updateQuizPackageListLocalStorage]);
 
 	const handleFormatCodeMinify = useCallback(async () => {
 		try {
-			const formatted = JSON.stringify(JSON.parse(quizJSONString));
-			setQuizJSONString(formatted);
-			updateQuizJSONLocalStorage(formatted);
+			const formatted = JSON.stringify(JSON.parse(quizPackageListString));
+			setQuizPackageListString(formatted);
+			updateQuizPackageListLocalStorage(formatted);
 		} catch (error) {
 			showErrorMessageToUser({
 				message: "Die JSON-Datei kann nicht formatiert werden, da sie nicht valide ist.",
 			});
 		}
-	}, [quizJSONString, updateQuizJSONLocalStorage]);
+	}, [quizPackageListString, updateQuizPackageListLocalStorage]);
 
 	const handleTemplate = useCallback(
 		(event: SyntheticEvent<HTMLButtonElement>) => {
-			const newData = JSON.stringify(templateQuizData);
-			setQuizJSON(templateQuizData);
-			setQuizJSONString(newData);
-			updateQuizJSONLocalStorage(newData);
+			const newData = JSON.stringify(templateQuizPackage);
+			setQuizPackageList(templateQuizPackageList);
+			setQuizPackageListString(newData);
+			updateQuizPackageListLocalStorage(newData);
 		},
-		[updateQuizJSONLocalStorage]
+		[updateQuizPackageListLocalStorage]
 	);
 
-	const onQuizDataUpdate = useCallback(
-		(quizData: QuizData) => {
-			setQuizJSON(quizData);
-			setQuizJSONString(JSON.stringify(quizData));
-			updateQuizJSONLocalStorage(JSON.stringify(quizData));
+	const onQuizPackageListUpdate = useCallback(
+		(quizPackageList: QuizPackageList) => {
+			setQuizPackageList(quizPackageList);
+			setQuizPackageListString(JSON.stringify(quizPackageList));
+			updateQuizPackageListLocalStorage(JSON.stringify(quizPackageList));
 		},
-		[setQuizJSON, setQuizJSONString, updateQuizJSONLocalStorage]
+		[setQuizPackageListString, updateQuizPackageListLocalStorage]
 	);
 
 	return (
 		<>
 			<Container>
 				<h1 className="text-center">Referentenansicht - Quiz-Initialisieren</h1>
+				<h2>Quiz Übersicht</h2>
+				{quizPackageList ? (
+					<>
+						<QuizPackageListEditor
+							onQuizPackageListUpdate={onQuizPackageListUpdate}
+							quizPackageList={quizPackageList}
+						/>
+					</>
+				) : (
+					<>
+						<Alert variant="warning">Die Quiz-JSON ist nicht valide.</Alert>
+					</>
+				)}
+				<h2>Quiz-JSON bearbeiten (erweitert)</h2>
 				<ButtonToolbar>
-					<Button variant="primary" className="me-2" onClick={handleInitQuiz}>
-						Quiz initialisieren
-					</Button>
 					<Button variant="danger" className="me-2" onClick={handleDelete}>
 						Löschen
 					</Button>
@@ -228,23 +235,12 @@ export default function InitQuiz() {
 						Verkleinern
 					</Button>
 				</ButtonToolbar>
-				<h2>Quiz-JSON bearbeiten</h2>
 				<CodeMirror
 					theme={oneDark}
-					value={quizJSONString}
+					value={quizPackageListString}
 					onChange={handleCodeUpdate}
 					extensions={[json(), linter(jsonParseLinter()), lintGutter()]}
 				/>
-				<h2>Quiz grafisch bearbeiten</h2>
-				{quizJSON ? (
-					<>
-						<QuizEditor onQuizDataUpdate={onQuizDataUpdate} quizJSON={quizJSON} />
-					</>
-				) : (
-					<>
-						<Alert variant="warning">Die Quiz-JSON ist nicht valide.</Alert>
-					</>
-				)}
 			</Container>
 		</>
 	);

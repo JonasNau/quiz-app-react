@@ -1,6 +1,6 @@
-import { QuestionEntry, QuizData } from "@/interfaces/joi";
+import { QuestionEntry, QuizPackage } from "@/interfaces/joi";
 import React, { SyntheticEvent, useCallback, useEffect, useState } from "react";
-import QuestionEditor from "./QuestionEditor/QuestionEditor";
+import QuestionEditor from "../QuestionEditor/QuestionEditor";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -12,22 +12,22 @@ import {
 	faTrashCan,
 	faX,
 } from "@fortawesome/free-solid-svg-icons";
-import styles from "./quizEditor.module.scss";
+import styles from "./quizPackageEditor.module.scss";
 import { moveArrayItem } from "@/app/includes/ts/object-utils";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
 
-export type OnQuizDataUpdate = (quizData: QuizData) => void;
+export type OnQuizPackageUpdate = (quizPackage: QuizPackage) => void;
 
-export default function QuizEditor({
-	quizJSON,
-	onQuizDataUpdate,
+export default function QuizPackageEditor({
+	quizJSON: quizPackageJSON,
+	onQuizPackageUpdate,
 }: {
-	quizJSON: QuizData;
-	onQuizDataUpdate: OnQuizDataUpdate;
+	quizJSON: QuizPackage;
+	onQuizPackageUpdate: OnQuizPackageUpdate;
 }) {
-	const [quizData, setQuizData] = useState<QuizData>(quizJSON);
+	const [quizPackage, setQuizPackage] = useState<QuizPackage>(quizPackageJSON);
 	const [editorIsOpen, setEditorIsOpen] = useState<boolean>(false);
 	const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(
 		null
@@ -35,14 +35,14 @@ export default function QuizEditor({
 
 	useEffect(() => {
 		//Replace the quizJSON on rerender if the quizJSON object changed
-		setQuizData(quizJSON);
-	}, [quizJSON]);
+		setQuizPackage(quizPackageJSON);
+	}, [quizPackageJSON]);
 
 	useEffect(() => {
-		onQuizDataUpdate(quizData);
-	}, [onQuizDataUpdate, quizData]);
+		onQuizPackageUpdate(quizPackage);
+	}, [onQuizPackageUpdate, quizPackage]);
 
-	const getNumberQuestions = () => quizData.length;
+	const getNumberQuestions = () => quizPackage.quizData.length;
 
 	const isFirstQuestion = (questionNumber: number) => questionNumber === 0;
 	const isLastQuestion = (questionNumber: number) =>
@@ -56,25 +56,31 @@ export default function QuizEditor({
 	const onQuestionEntryUpdate = useCallback(
 		(questionEntry: QuestionEntry) => {
 			if (selectedQuestionNumber === null) return;
-			setQuizData((prev) => {
-				return prev.map((item, index) => {
-					if (index === selectedQuestionNumber) return questionEntry;
-					return item;
-				});
+			setQuizPackage((prev) => {
+				return {
+					...prev,
+					quizData: prev.quizData.map((item, index) => {
+						if (index === selectedQuestionNumber) return questionEntry;
+						return item;
+					}),
+				};
 			});
 		},
 		[selectedQuestionNumber]
 	);
 
 	const addNewEmptyQuestionEntryToBottom = () => {
-		setQuizData((prev) => {
-			return [...prev, { question: "", answers: [] }] satisfies QuizData;
+		setQuizPackage((prev) => {
+			return {
+				...prev,
+				quizData: [...prev.quizData, { question: "Frage?", answers: [] }],
+			};
 		});
 	};
 
 	const deleteQuestionEntryAtIndex = (index: number) => {
-		setQuizData((prev) => {
-			return prev.filter((item, i) => i !== index);
+		setQuizPackage((prev) => {
+			return { ...prev, quizData: prev.quizData.filter((item, i) => i !== index) };
 		});
 	};
 
@@ -82,11 +88,13 @@ export default function QuizEditor({
 		selectedQuestionNumber !== null && editorIsOpen && selectedQuestionNumber === index;
 
 	return (
-		<div className={styles.quizEditor}>
-			<h2>Übersicht</h2>
+		<div className={styles.quizPackageEditor}>
+			<p>Name des Quiz: {quizPackage.name}</p>
+			<p>Beschreibung des Quiz: {quizPackage.description}</p>
+			<h2>Fragen, die im Quiz enthalten sind</h2>
 			<div className="overview">
 				<DndProvider backend={HTML5Backend}>
-					{quizData.map((questionEntry, index) => {
+					{quizPackage.quizData.map((questionEntry, index) => {
 						return (
 							<div key={index}>
 								<DraggableListItem
@@ -94,8 +102,11 @@ export default function QuizEditor({
 									index={index}
 									id={index}
 									moveListItem={(dragIndex: number, hoverIndex: number) => {
-										setQuizData((prev) => {
-											return moveArrayItem(prev, dragIndex, hoverIndex);
+										setQuizPackage((prev) => {
+											return {
+												...prev,
+												quizData: moveArrayItem(prev.quizData, dragIndex, hoverIndex),
+											};
 										});
 									}}
 								>
@@ -137,8 +148,15 @@ export default function QuizEditor({
 														disabled={isFirstQuestion(index)}
 														onClick={(event) => {
 															if (isFirstQuestion(index)) return;
-															setQuizData((prev) => {
-																return moveArrayItem(prev, index, index - 1);
+															setQuizPackage((prev) => {
+																return {
+																	...prev,
+																	quizData: moveArrayItem(
+																		prev.quizData,
+																		index,
+																		index - 1
+																	),
+																};
 															});
 														}}
 													>
@@ -149,8 +167,15 @@ export default function QuizEditor({
 														disabled={isLastQuestion(index)}
 														onClick={(event) => {
 															if (isLastQuestion(index)) return;
-															setQuizData((prev) => {
-																return moveArrayItem(prev, index, index + 1);
+															setQuizPackage((prev) => {
+																return {
+																	...prev,
+																	quizData: moveArrayItem(
+																		prev.quizData,
+																		index,
+																		index + 1
+																	),
+																};
 															});
 														}}
 													>
