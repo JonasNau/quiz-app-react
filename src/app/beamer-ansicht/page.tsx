@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Container } from "react-bootstrap";
 import QuizReadOnly from "../components/QuizReadOnly/QuizReadOnly";
-import { QuizData } from "@/interfaces/joi";
+import { QuizData, QuizPackage } from "@/interfaces/joi";
 import { Socket, io } from "socket.io-client";
 
 import styles from "./beamer-ansicht.module.scss";
@@ -10,7 +10,7 @@ import { ERoomNames, ESocketEventNames } from "../includes/ts/socketIO/socketNam
 
 export default function BeamerAnsicht() {
 	const [showSolutions, setShowSolutions] = useState<boolean>(false);
-	const [quizData, setQuizData] = useState<QuizData | null>(null);
+	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
 	const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(0);
 	const [waitingMessage, setWatingMessage] = useState<string>(
@@ -29,7 +29,7 @@ export default function BeamerAnsicht() {
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
 			if (errorName === "NO_QUIZ_DATA") {
-				setQuizData(null);
+				setQuizPackage(null);
 				setWatingMessage(EWaitingMessage.NO_DATA);
 			}
 		});
@@ -40,9 +40,12 @@ export default function BeamerAnsicht() {
 
 		socketIOClient.on(ESocketEventNames.SUCCESS, async (successMessage: string) => {});
 
-		socketIOClient.on(ESocketEventNames.SEND_QUIZ_DATA, async (quizData: QuizData) => {
-			setQuizData(quizData);
-		});
+		socketIOClient.on(
+			ESocketEventNames.SEND_QUIZ_DATA,
+			async (quizPackage: QuizPackage) => {
+				setQuizPackage(quizPackage);
+			}
+		);
 
 		socketIOClient.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
 			setCurrentQuestionNumber(number);
@@ -65,10 +68,10 @@ export default function BeamerAnsicht() {
 		<>
 			<Container className={styles.componentContainer}>
 				<h1 className="text-center">Quiz</h1>
-				{quizData ? (
+				{quizPackage && quizPackage.quizData.length ? (
 					<div className={styles.quiz}>
 						<QuizReadOnly
-							questionEntry={quizData[currentQuestionNumber]}
+							questionEntry={quizPackage.quizData[currentQuestionNumber]}
 							showSolutions={showSolutions}
 						/>
 					</div>

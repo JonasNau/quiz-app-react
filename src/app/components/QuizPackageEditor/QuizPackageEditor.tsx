@@ -17,6 +17,7 @@ import { moveArrayItem } from "@/app/includes/ts/object-utils";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
+import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-helper-functions";
 
 export type OnQuizPackageUpdate = (quizPackage: QuizPackage) => void;
 
@@ -89,8 +90,32 @@ export default function QuizPackageEditor({
 
 	return (
 		<div className={styles.quizPackageEditor}>
-			<p>Name des Quiz: {quizPackage.name}</p>
-			<p>Beschreibung des Quiz: {quizPackage.description}</p>
+			<Form.Control
+				as="textarea"
+				value={quizPackage.name}
+				className="name"
+				placeholder="Quizname..."
+				onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+					const value = event.target.value;
+					autoResizeTextarea(event.target);
+					setQuizPackage((prev) => {
+						return { ...prev, name: value };
+					});
+				}}
+			/>
+			<Form.Control
+				as="textarea"
+				value={quizPackage.description}
+				className="description"
+				placeholder="Beschreibung..."
+				onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+					const value = event.target.value;
+					autoResizeTextarea(event.target);
+					setQuizPackage((prev) => {
+						return { ...prev, description: value };
+					});
+				}}
+			/>
 			<h2>Fragen, die im Quiz enthalten sind</h2>
 			<div className="overview">
 				<DndProvider backend={HTML5Backend}>

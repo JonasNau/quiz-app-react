@@ -5,6 +5,10 @@
 	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
 	margin-bottom: 2rem;
 	:global {
+		textarea {
+			font-size: 1.4rem;
+			margin-top: 1rem;
+		}
 		.overview {
 			.border-bottom-provider {
 				border-bottom: 1px solid black;

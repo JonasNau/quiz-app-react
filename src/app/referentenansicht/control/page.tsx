@@ -11,7 +11,7 @@ import { Button, Col, Container, Form, FormCheck, Row } from "react-bootstrap";
 
 import styles from "./page.module.scss";
 import QuizReadOnly from "@/app/components/QuizReadOnly/QuizReadOnly";
-import { QuizData } from "@/interfaces/joi/QuizSchemas";
+import { QuizData, QuizPackage } from "@/interfaces/joi/QuizSchemas";
 import { Socket, io } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
 import {
@@ -42,10 +42,10 @@ export default function ControlView() {
 	const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(0);
 	const [showSolutions, setShowSolutions] = useState<boolean>(false);
 	const [showSolutionsInPreview, setShowSolutionsInPreview] = useState<boolean>(false);
-	const [quizData, setQuizData] = useState<QuizData | null>(null);
+	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
 
-	const getMaxQuestions = () => (quizData ? quizData.length : 0);
+	const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
 	useEffect(() => {
 		//Create Socket IO Client
@@ -59,7 +59,7 @@ export default function ControlView() {
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
 			if (errorName === "NO_QUIZ_DATA") {
-				setQuizData(null);
+				setQuizPackage(null);
 				const userResponse = await showErrorMessageAndAskUser({
 					message:
 						"Es gibt noch keine Quizdaten. Bitte initialisiere das Quiz zuerst. Möchtest du das Quiz jetzt initialisieren?",
@@ -78,9 +78,12 @@ export default function ControlView() {
 
 		socketIOClient.on(ESocketEventNames.SUCCESS, async (successMessage: string) => {});
 
-		socketIOClient.on(ESocketEventNames.SEND_QUIZ_DATA, async (quizData: QuizData) => {
-			setQuizData(quizData);
-		});
+		socketIOClient.on(
+			ESocketEventNames.SEND_QUIZ_DATA,
+			async (quizPackage: QuizPackage) => {
+				setQuizPackage(quizPackage);
+			}
+		);
 
 		socketIOClient.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
 			setCurrentQuestionNumber(number);
@@ -283,14 +286,16 @@ export default function ControlView() {
 					</Col>
 					<Col className={styles.preview}>
 						<h2 className="text-center">Vorschau</h2>
-						{quizData ? (
+						{quizPackage?.quizData && quizPackage.quizData.length ? (
 							<QuizReadOnly
-								questionEntry={quizData[currentQuestionNumber]}
+								questionEntry={quizPackage.quizData[currentQuestionNumber]}
 								showSolutions={showSolutionsInPreview}
 							/>
 						) : (
 							<>
-								<p className="text-center">Bitte initialisiere das Quiz zuerst.</p>
+								<p className="text-center">
+									Bitte initialisiere das Quiz zuerst oder füge eine Frage hinzu.
+								</p>
 							</>
 						)}
 					</Col>

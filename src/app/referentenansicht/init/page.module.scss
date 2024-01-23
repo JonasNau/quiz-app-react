@@ -1,0 +1,12 @@
+.initView {
+	:global {
+		.code-section {
+			background-color: white;
+			padding: 1rem;
+			border-radius: 20px;
+			.code-editor {
+				margin: 1rem;
+			}
+		}
+	}
+}

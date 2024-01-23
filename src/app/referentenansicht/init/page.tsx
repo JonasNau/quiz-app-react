@@ -28,6 +28,7 @@ import QuizPackageEditor from "@/app/components/QuizPackageEditor/QuizPackageEdi
 import QuizPackageListEditor from "@/app/components/QuizPackageListEditor/QuizPackageListEditor";
 import { QuizPackage, QuizPackageList } from "@/interfaces/joi";
 import { QuizPackageListSchema } from "@/schemas/joi/QuizSchemas";
+import JSONCodeEditor from "@/app/components/JSONCodeEditor/JSONCodeEditor";
 
 const QuizPackageList_LocalStorage_Name = "quiz-json-list";
 
@@ -71,8 +72,14 @@ export default function InitQuiz() {
 
 	useEffect(() => {
 		//Read quiz-json from local storage
-		const quizJSONListString =
-			localStorage.getItem(QuizPackageList_LocalStorage_Name) ?? "[]";
+		let quizJSONListString = localStorage.getItem(QuizPackageList_LocalStorage_Name);
+		if (
+			quizJSONListString === null ||
+			(typeof quizJSONListString === "string" && quizJSONListString.length == 0)
+		) {
+			quizJSONListString = "[]";
+		}
+		console.log(quizJSONListString);
 		setQuizPackageListString(quizJSONListString);
 		updateQuizPackageListLocalStorage(quizJSONListString);
 
@@ -121,19 +128,6 @@ export default function InitQuiz() {
 			if (!validationResult.error) return validationResult.value;
 		} catch {}
 		return null;
-	};
-
-	const handleCodeUpdate = (value: string, viewUpdate: ViewUpdate) => {
-		setQuizPackageListString(value);
-
-		const quizJSON = getQuizPackageListFromString(value);
-		if (quizJSON) {
-			setQuizPackageList(quizJSON);
-		} else {
-			setQuizPackageList(null);
-		}
-
-		updateQuizPackageListLocalStorage(value);
 	};
 
 	const handleDelete = (event: SyntheticEvent<HTMLButtonElement>) => {
@@ -186,7 +180,7 @@ export default function InitQuiz() {
 
 	const handleTemplate = useCallback(
 		(event: SyntheticEvent<HTMLButtonElement>) => {
-			const newData = JSON.stringify(templateQuizPackage);
+			const newData = JSON.stringify(templateQuizPackageList);
 			setQuizPackageList(templateQuizPackageList);
 			setQuizPackageListString(newData);
 			updateQuizPackageListLocalStorage(newData);
@@ -203,8 +197,24 @@ export default function InitQuiz() {
 		[setQuizPackageListString, updateQuizPackageListLocalStorage]
 	);
 
+	const onQuizPackageListJSONCodeChange = useCallback(
+		(code: string) => {
+			setQuizPackageListString(code);
+
+			const quizJSON = getQuizPackageListFromString(code);
+			if (quizJSON) {
+				setQuizPackageList(quizJSON);
+			} else {
+				setQuizPackageList(null);
+			}
+
+			updateQuizPackageListLocalStorage(code);
+		},
+		[updateQuizPackageListLocalStorage]
+	);
+
 	return (
-		<>
+		<div className={styles.initView}>
 			<Container>
 				<h1 className="text-center">Referentenansicht - Quiz-Initialisieren</h1>
 				<h2>Quiz Übersicht</h2>
@@ -213,6 +223,7 @@ export default function InitQuiz() {
 						<QuizPackageListEditor
 							onQuizPackageListUpdate={onQuizPackageListUpdate}
 							quizPackageList={quizPackageList}
+							onQuizPackageSelect={sendQuizPackageToServer}
 						/>
 					</>
 				) : (
@@ -221,27 +232,27 @@ export default function InitQuiz() {
 					</>
 				)}
 				<h2>Quiz-JSON bearbeiten (erweitert)</h2>
-				<ButtonToolbar>
-					<Button variant="danger" className="me-2" onClick={handleDelete}>
-						Löschen
-					</Button>
-					<Button variant="secondary" className="me-2" onClick={handleTemplate}>
-						Von Vorlage laden
-					</Button>
-					<Button variant="secondary" className="me-2" onClick={handleAutoFormatCode}>
-						Formatieren
-					</Button>
-					<Button variant="secondary" className="me-2" onClick={handleFormatCodeMinify}>
-						Verkleinern
-					</Button>
-				</ButtonToolbar>
-				<CodeMirror
-					theme={oneDark}
-					value={quizPackageListString}
-					onChange={handleCodeUpdate}
-					extensions={[json(), linter(jsonParseLinter()), lintGutter()]}
-				/>
+				<div className="code-section">
+					<ButtonToolbar className="code-editor-toolbar d-flex flex-row justify-content-center">
+						<Button variant="danger" className="me-2" onClick={handleDelete}>
+							Löschen
+						</Button>
+						<Button variant="secondary" className="me-2" onClick={handleTemplate}>
+							Von Vorlage laden
+						</Button>
+						<Button variant="secondary" className="me-2" onClick={handleAutoFormatCode}>
+							Formatieren
+						</Button>
+						<Button variant="secondary" className="me-2" onClick={handleFormatCodeMinify}>
+							Verkleinern
+						</Button>
+					</ButtonToolbar>
+					<JSONCodeEditor
+						code={quizPackageListString}
+						onCodeUpdate={onQuizPackageListJSONCodeChange}
+					/>
+				</div>
 			</Container>
-		</>
+		</div>
 	);
 }
