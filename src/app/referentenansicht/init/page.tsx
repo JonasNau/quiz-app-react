@@ -26,9 +26,12 @@ import { DefaultErrorMessages } from "@/app/includes/ts/frontend/userFeedback/Me
 import { useRouter } from "next/navigation";
 import QuizPackageEditor from "@/app/components/QuizPackageEditor/QuizPackageEditor";
 import QuizPackageListEditor from "@/app/components/QuizPackageListEditor/QuizPackageListEditor";
-import { QuizPackage, QuizPackageList } from "@/interfaces/joi";
+import { QuestionEntry, QuizPackage, QuizPackageList } from "@/interfaces/joi";
 import { QuizPackageListSchema } from "@/schemas/joi/QuizSchemas";
 import JSONCodeEditor from "@/app/components/JSONCodeEditor/JSONCodeEditor";
+import withReactContent from "sweetalert2-react-content";
+import Swal from "sweetalert2";
+import QuestionEditor from "@/app/components/QuestionEditor/QuestionEditor";
 
 const QuizPackageList_LocalStorage_Name = "quiz-json-list";
 
@@ -59,6 +62,10 @@ export default function InitQuiz() {
 	const [quizPackageListString, setQuizPackageListString] = useState<string>("");
 	const [quizPackageList, setQuizPackageList] = useState<QuizPackageList | null>();
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
+	const [loadedQuizJSON, setLoadedQuizJSON] = useState<boolean>(false);
+	const [editQuizNumber, setEditQuizNumber] = useState<number | null>(null);
+	const [editQuqestionNumber, setEditQuestionNumber] = useState<number | null>(null);
+	const [editorIsOpen, setEditorIsOpen] = useState<boolean>(false);
 
 	const updateQuizPackageListLocalStorage = useCallback(
 		(quizPackageListLocalStorageString: string) => {
@@ -79,9 +86,10 @@ export default function InitQuiz() {
 		) {
 			quizJSONListString = "[]";
 		}
-		console.log(quizJSONListString);
 		setQuizPackageListString(quizJSONListString);
 		updateQuizPackageListLocalStorage(quizJSONListString);
+
+		setLoadedQuizJSON(true);
 
 		const quizJSONList = getQuizPackageListFromString(quizJSONListString);
 		if (quizJSONList) {
@@ -199,6 +207,7 @@ export default function InitQuiz() {
 
 	const onQuizPackageListJSONCodeChange = useCallback(
 		(code: string) => {
+			if (!loadedQuizJSON) return;
 			setQuizPackageListString(code);
 
 			const quizJSON = getQuizPackageListFromString(code);
@@ -210,8 +219,109 @@ export default function InitQuiz() {
 
 			updateQuizPackageListLocalStorage(code);
 		},
-		[updateQuizPackageListLocalStorage]
+		[loadedQuizJSON, updateQuizPackageListLocalStorage]
 	);
+
+	const showEditQuestionEntryModal = useCallback(
+		async (quizIndex: number, questionIndex: number) => {
+			if (!quizPackageList) return;
+			await withReactContent(Swal).fire({
+				title: "Frage bearbeiten",
+				html: (
+					<>
+						<QuestionEditor
+							onQuestionEntryUpdate={(questionEntry: QuestionEntry) => {
+								setQuizPackageList((prev) => {
+									return prev!.map((item, i) => {
+										if (i === quizIndex)
+											return {
+												...item,
+												quizData: item.quizData.map((item, i) => {
+													if (i === questionIndex) return questionEntry;
+													return item;
+												}),
+											};
+										return item;
+									});
+								});
+							}}
+							questionEntryJSON={quizPackageList[quizIndex].quizData[questionIndex]}
+						/>
+					</>
+				),
+				showCloseButton: true,
+				showConfirmButton: true,
+				allowOutsideClick: false,
+				allowEscapeKey: true,
+				backdrop: true,
+				grow: "fullscreen",
+			});
+			setEditorIsOpen(false);
+		},
+		[quizPackageList]
+	);
+
+	const showEditQuizModal = useCallback(
+		async (quizIndex: number) => {
+			if (!quizPackageList) return;
+			await withReactContent(Swal).fire({
+				title: "Quiz bearbeiten",
+				html: (
+					<>
+						<QuizPackageEditor
+							onQuizPackageUpdate={(quizPackage: QuizPackage) => {
+								setQuizPackageList((prev) => {
+									return prev!.map((item, i) => {
+										if (i === quizIndex) return quizPackage;
+										return item;
+									});
+								});
+							}}
+							quizJSON={quizPackageList[quizIndex]}
+							onQuestionEdit={(questionIndex: number) => {
+								setEditQuizNumber(quizIndex);
+								setEditQuestionNumber(questionIndex);
+							}}
+						/>
+					</>
+				),
+				showCloseButton: true,
+				showConfirmButton: true,
+				allowOutsideClick: false,
+				allowEscapeKey: true,
+				backdrop: true,
+				grow: "fullscreen",
+			});
+			setEditQuizNumber(null);
+			setEditorIsOpen(false);
+		},
+		[quizPackageList]
+	);
+
+	useEffect(() => {
+		if (!editorIsOpen) return;
+		if (editQuizNumber === null && editQuqestionNumber === null) {
+			return;
+		}
+		if (editQuizNumber !== null && editQuqestionNumber === null) {
+			showEditQuizModal(editQuizNumber);
+			return;
+		}
+		if (editQuizNumber !== null && editQuqestionNumber !== null) {
+			showEditQuestionEntryModal(editQuizNumber, editQuqestionNumber);
+			return;
+		}
+
+		return () => {
+			Swal.close();
+		};
+	}, [
+		editQuizNumber,
+		editQuqestionNumber,
+		editorIsOpen,
+		showEditQuestionEntryModal,
+		showEditQuizModal,
+	]);
 
 	return (
 		<div className={styles.initView}>
@@ -224,6 +334,11 @@ export default function InitQuiz() {
 							onQuizPackageListUpdate={onQuizPackageListUpdate}
 							quizPackageList={quizPackageList}
 							onQuizPackageSelect={sendQuizPackageToServer}
+							onQuizPackageEdit={(quizPackageIndex: number) => {
+								setEditQuizNumber(quizPackageIndex);
+								setEditQuestionNumber(null);
+								setEditorIsOpen(true);
+							}}
 						/>
 					</>
 				) : (

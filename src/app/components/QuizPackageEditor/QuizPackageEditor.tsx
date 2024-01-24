@@ -18,21 +18,22 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
 import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-helper-functions";
+import withReactContent from "sweetalert2-react-content";
+import Swal from "sweetalert2";
 
 export type OnQuizPackageUpdate = (quizPackage: QuizPackage) => void;
+export type OnQuestionEdit = (questionIndex: number) => void;
 
 export default function QuizPackageEditor({
 	quizJSON: quizPackageJSON,
 	onQuizPackageUpdate,
+	onQuestionEdit,
 }: {
 	quizJSON: QuizPackage;
 	onQuizPackageUpdate: OnQuizPackageUpdate;
+	onQuestionEdit: OnQuestionEdit;
 }) {
 	const [quizPackage, setQuizPackage] = useState<QuizPackage>(quizPackageJSON);
-	const [editorIsOpen, setEditorIsOpen] = useState<boolean>(false);
-	const [selectedQuestionNumber, setSelectedQuestionNumber] = useState<number | null>(
-		null
-	);
 
 	useEffect(() => {
 		//Replace the quizJSON on rerender if the quizJSON object changed
@@ -49,26 +50,9 @@ export default function QuizPackageEditor({
 	const isLastQuestion = (questionNumber: number) =>
 		questionNumber === getNumberQuestions() - 1;
 
-	const editQuestion = (questionNumber: number) => {
-		setSelectedQuestionNumber(questionNumber);
-		setEditorIsOpen(true);
+	const editQuestion = (index: number) => {
+		onQuestionEdit(index);
 	};
-
-	const onQuestionEntryUpdate = useCallback(
-		(questionEntry: QuestionEntry) => {
-			if (selectedQuestionNumber === null) return;
-			setQuizPackage((prev) => {
-				return {
-					...prev,
-					quizData: prev.quizData.map((item, index) => {
-						if (index === selectedQuestionNumber) return questionEntry;
-						return item;
-					}),
-				};
-			});
-		},
-		[selectedQuestionNumber]
-	);
 
 	const addNewEmptyQuestionEntryToBottom = () => {
 		setQuizPackage((prev) => {
@@ -84,9 +68,6 @@ export default function QuizPackageEditor({
 			return { ...prev, quizData: prev.quizData.filter((item, i) => i !== index) };
 		});
 	};
-
-	const editorShouldBeOpenOnIndex = (index: number) =>
-		selectedQuestionNumber !== null && editorIsOpen && selectedQuestionNumber === index;
 
 	return (
 		<div className={styles.quizPackageEditor}>
@@ -141,32 +122,16 @@ export default function QuizPackageEditor({
 												<div className="index">{index + 1}</div>
 												<div className="question">{questionEntry.question}</div>
 												<ButtonGroup>
-													{editorShouldBeOpenOnIndex(index) ? (
-														<>
-															<Button
-																variant="primary"
-																onClick={(event) => {
-																	setEditorIsOpen(false);
-																	setSelectedQuestionNumber(null);
-																}}
-															>
-																<FontAwesomeIcon icon={faX} />
-															</Button>
-														</>
-													) : (
-														<>
-															<Button
-																variant="success"
-																onClick={(
-																	event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-																) => {
-																	editQuestion(index);
-																}}
-															>
-																<FontAwesomeIcon icon={faPencil} />
-															</Button>
-														</>
-													)}
+													<Button
+														variant="success"
+														onClick={(
+															event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+														) => {
+															editQuestion(index);
+														}}
+													>
+														<FontAwesomeIcon icon={faPencil} />
+													</Button>
 
 													<Button
 														variant="primary"
@@ -218,17 +183,6 @@ export default function QuizPackageEditor({
 										</div>
 									</div>
 								</DraggableListItem>
-								{editorShouldBeOpenOnIndex(index) && (
-									<>
-										<h3 className="text-center">Bearbeiten</h3>
-										<div className="question-editor-wrapper">
-											<QuestionEditor
-												onQuestionEntryUpdate={onQuestionEntryUpdate}
-												questionEntryJSON={questionEntry}
-											/>
-										</div>
-									</>
-								)}
 							</div>
 						);
 					})}

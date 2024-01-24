@@ -32,15 +32,18 @@ import { showErrorMessageToUser } from "@/app/includes/ts/frontend/userFeedback/
 
 export type OnQuizDataListUpdate = (quizPackageList: QuizPackageList) => void;
 export type OnQuizPackageSelect = (quizPackage: QuizPackage) => void;
+export type OnQuizPackageEdit = (quizPackageIndex: number) => void;
 
 export default function QuizPackageListEditor({
 	quizPackageList: quizPackageListJSON,
 	onQuizPackageListUpdate,
 	onQuizPackageSelect,
+	onQuizPackageEdit,
 }: {
 	quizPackageList: QuizPackageList;
 	onQuizPackageListUpdate: OnQuizDataListUpdate;
 	onQuizPackageSelect: OnQuizPackageSelect;
+	onQuizPackageEdit: OnQuizPackageEdit;
 }) {
 	const [quizPackageList, setQuizPackageList] =
 		useState<QuizPackageList>(quizPackageListJSON);
@@ -57,48 +60,25 @@ export default function QuizPackageListEditor({
 
 	const isFirstQuizPackage = (number: number) => number === 0;
 	const isLastQuizPackage = (number: number) => number === getNumberQuizPackages() - 1;
-	const [editorIsOpen, setEditorIsOpen] = useState<boolean>(false);
-	const [selectedQuizPackageNumber, setSelectedQuizPackageNumber] = useState<
-		number | null
-	>(null);
 
-	const editQuiz = (quizNumber: number) => {
-		setSelectedQuizPackageNumber(quizNumber);
-		setEditorIsOpen(true);
+	const editQuiz = (index: number) => {
+		onQuizPackageEdit(index);
 	};
 
 	const addNewEmptyQuizPackageToBottom = () => {
 		setQuizPackageList((prev) => {
 			return [
 				...prev,
-				{ name: "Quizname", description: "Beschreibung", quizData: [] },
+				{ name: "Quizname", description: "", quizData: [] },
 			] satisfies QuizPackageList;
 		});
 	};
-
-	const editorShouldBeOpenOnIndex = (index: number) =>
-		selectedQuizPackageNumber !== null &&
-		editorIsOpen &&
-		selectedQuizPackageNumber === index;
 
 	const deleteQuizPackageAtIndex = (index: number) => {
 		setQuizPackageList((prev) => {
 			return prev.filter((item, i) => i !== index);
 		});
 	};
-
-	const onQuizPackageUpdate = useCallback(
-		(quizPackage: QuizPackage) => {
-			if (selectedQuizPackageNumber === null) return;
-			setQuizPackageList((prev) => {
-				return prev.map((item, index) => {
-					if (index === selectedQuizPackageNumber) return quizPackage;
-					return item;
-				});
-			});
-		},
-		[selectedQuizPackageNumber]
-	) satisfies OnQuizPackageUpdate;
 
 	const importQuizViaJSON = useCallback(async () => {
 		let importString = "";
@@ -112,6 +92,7 @@ export default function QuizPackageListEditor({
 			),
 			showConfirmButton: true,
 			showCancelButton: true,
+			grow: "fullscreen",
 		});
 
 		if (result.isConfirmed) {
@@ -144,10 +125,7 @@ export default function QuizPackageListEditor({
 			title: <i>Hier ist der JSON-Code des Quizzes:</i>,
 			html: (
 				<>
-					<JSONCodeEditor
-						code={JSON.stringify(quizPackage, null, 2)}
-						onCodeUpdate={() => {}}
-					/>
+					<JSONCodeEditor code={JSON.stringify(quizPackage)} onCodeUpdate={() => {}} />
 				</>
 			),
 			showConfirmButton: true,
@@ -176,32 +154,16 @@ export default function QuizPackageListEditor({
 										<div className="content d-flex align-items-center justify-content-center">
 											<div className="quiz-name">{quizEntry.name}</div>
 											<ButtonGroup>
-												{editorShouldBeOpenOnIndex(index) ? (
-													<>
-														<Button
-															variant="primary"
-															onClick={(event) => {
-																setEditorIsOpen(false);
-																setSelectedQuizPackageNumber(null);
-															}}
-														>
-															<FontAwesomeIcon icon={faX} />
-														</Button>
-													</>
-												) : (
-													<>
-														<Button
-															variant="success"
-															onClick={(
-																event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-															) => {
-																editQuiz(index);
-															}}
-														>
-															<FontAwesomeIcon icon={faPencil} />
-														</Button>
-													</>
-												)}
+												<Button
+													variant="success"
+													onClick={(
+														event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+													) => {
+														editQuiz(index);
+													}}
+												>
+													<FontAwesomeIcon icon={faPencil} />
+												</Button>
 												<Button
 													variant="info"
 													onClick={(event) => {
@@ -255,17 +217,6 @@ export default function QuizPackageListEditor({
 									</div>
 								</div>
 							</DraggableListItem>
-							{editorShouldBeOpenOnIndex(index) && (
-								<>
-									<h3 className="text-center">Bearbeiten</h3>
-									<div className="question-editor-wrapper">
-										<QuizPackageEditor
-											onQuizPackageUpdate={onQuizPackageUpdate}
-											quizJSON={quizEntry}
-										/>
-									</div>
-								</>
-							)}
 						</div>
 					);
 				})}
