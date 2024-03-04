@@ -32,6 +32,7 @@ import JSONCodeEditor from "@/app/components/JSONCodeEditor/JSONCodeEditor";
 import withReactContent from "sweetalert2-react-content";
 import Swal from "sweetalert2";
 import QuestionEditor from "@/app/components/QuestionEditor/QuestionEditor";
+import { createRoot } from "react-dom/client";
 
 const QuizPackageList_LocalStorage_Name = "quiz-json-list";
 
@@ -63,9 +64,9 @@ export default function InitQuiz() {
 	const [quizPackageList, setQuizPackageList] = useState<QuizPackageList | null>();
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
 	const [loadedQuizJSON, setLoadedQuizJSON] = useState<boolean>(false);
+
 	const [editQuizNumber, setEditQuizNumber] = useState<number | null>(null);
-	const [editQuqestionNumber, setEditQuestionNumber] = useState<number | null>(null);
-	const [editorIsOpen, setEditorIsOpen] = useState<boolean>(false);
+	const [editQuestionNumber, setEditQuestionNumber] = useState<number | null>(null);
 
 	const updateQuizPackageListLocalStorage = useCallback(
 		(quizPackageListLocalStorageString: string) => {
@@ -222,106 +223,121 @@ export default function InitQuiz() {
 		[loadedQuizJSON, updateQuizPackageListLocalStorage]
 	);
 
-	const showEditQuestionEntryModal = useCallback(
-		async (quizIndex: number, questionIndex: number) => {
-			if (!quizPackageList) return;
-			await withReactContent(Swal).fire({
-				title: "Frage bearbeiten",
-				html: (
-					<>
-						<QuestionEditor
-							onQuestionEntryUpdate={(questionEntry: QuestionEntry) => {
-								setQuizPackageList((prev) => {
-									return prev!.map((item, i) => {
-										if (i === quizIndex)
-											return {
-												...item,
-												quizData: item.quizData.map((item, i) => {
-													if (i === questionIndex) return questionEntry;
-													return item;
-												}),
-											};
-										return item;
-									});
-								});
-							}}
-							questionEntryJSON={quizPackageList[quizIndex].quizData[questionIndex]}
-						/>
-					</>
-				),
-				showCloseButton: true,
-				showConfirmButton: true,
-				allowOutsideClick: false,
-				allowEscapeKey: true,
-				backdrop: true,
-				grow: "fullscreen",
-			});
-			setEditorIsOpen(false);
-		},
-		[quizPackageList]
-	);
+	const openQuizEditor = useCallback(
+		(editQuizNumber: number) => {
+			if (!quizPackageList) {
+				return;
+			}
 
-	const showEditQuizModal = useCallback(
-		async (quizIndex: number) => {
-			if (!quizPackageList) return;
-			await withReactContent(Swal).fire({
+			let newQuizPackage: QuizPackage = quizPackageList[editQuizNumber];
+
+			withReactContent(Swal).fire({
 				title: "Quiz bearbeiten",
 				html: (
 					<>
 						<QuizPackageEditor
-							onQuizPackageUpdate={(quizPackage: QuizPackage) => {
+							quizJSON={newQuizPackage}
+							onQuestionEdit={(questionIndex: number) => {
+								setEditQuestionNumber(questionIndex);
+							}}
+							onQuizPackageUpdate={(updateedQuizPackage: QuizPackage) => {
 								setQuizPackageList((prev) => {
-									return prev!.map((item, i) => {
-										if (i === quizIndex) return quizPackage;
-										return item;
+									if (!prev) return prev;
+									return prev.map((quizPackage: QuizPackage, index: number) => {
+										if (editQuizNumber === index) return updateedQuizPackage;
+										return quizPackage;
 									});
 								});
 							}}
-							quizJSON={quizPackageList[quizIndex]}
-							onQuestionEdit={(questionIndex: number) => {
-								setEditQuizNumber(quizIndex);
-								setEditQuestionNumber(questionIndex);
+						/>
+						.
+					</>
+				),
+				showCloseButton: true,
+				didClose() {
+					setEditQuizNumber(null);
+				},
+				didDestroy() {},
+				grow: "fullscreen",
+			});
+		},
+		[quizPackageList]
+	);
+	const openQuestionEditor = useCallback(
+		(editQuizNumber: number, editQuestionNumber: number) => {
+			if (!quizPackageList) {
+				return;
+			}
+
+			withReactContent(Swal).fire({
+				title: "Frage bearbeiten",
+				showCloseButton: true,
+				html: (
+					<>
+						<QuestionEditor
+							questionEntryJSON={
+								quizPackageList[editQuizNumber].quizData[editQuestionNumber]
+							}
+							onQuestionEntryUpdate={(updatedQuestionEntry: QuestionEntry) => {
+								if (!quizPackageList) return;
+								setQuizPackageList((prev) => {
+									if (!prev) return prev;
+									return prev.map(
+										(quizPackage: QuizPackage, quizPackageIndex: number) => {
+											if (editQuizNumber === quizPackageIndex)
+												return {
+													...prev[editQuizNumber],
+													quizData: prev[editQuizNumber].quizData.map(
+														(
+															questionEntry: QuestionEntry,
+															questionEntryIndex: number
+														) => {
+															if (questionEntryIndex === editQuestionNumber)
+																return updatedQuestionEntry;
+															return questionEntry;
+														}
+													),
+												};
+											return quizPackage;
+										}
+									);
+								});
 							}}
 						/>
 					</>
 				),
-				showCloseButton: true,
-				showConfirmButton: true,
-				allowOutsideClick: false,
-				allowEscapeKey: true,
-				backdrop: true,
+				didClose() {
+					setEditQuestionNumber(null);
+				},
+				didDestroy() {},
 				grow: "fullscreen",
 			});
-			setEditQuizNumber(null);
-			setEditorIsOpen(false);
 		},
 		[quizPackageList]
 	);
 
 	useEffect(() => {
-		if (!editorIsOpen) return;
-		if (editQuizNumber === null && editQuqestionNumber === null) {
-			return;
-		}
-		if (editQuizNumber !== null && editQuqestionNumber === null) {
-			showEditQuizModal(editQuizNumber);
-			return;
-		}
-		if (editQuizNumber !== null && editQuqestionNumber !== null) {
-			showEditQuestionEntryModal(editQuizNumber, editQuqestionNumber);
+		console.debug("Quiz:", editQuizNumber, "Question:", editQuestionNumber);
+		if (editQuizNumber === null && editQuestionNumber === null) return;
+
+		if (editQuizNumber !== null && editQuestionNumber === null) {
+			console.debug("open quiz editor");
+			openQuizEditor(editQuizNumber);
 			return;
 		}
 
-		return () => {
-			Swal.close();
-		};
-	}, [
-		editQuizNumber,
-		editQuqestionNumber,
-		editorIsOpen,
-		showEditQuestionEntryModal,
-		showEditQuizModal,
-	]);
+		if (editQuizNumber !== null && editQuestionNumber !== null) {
+			console.debug("open question editor");
+			openQuestionEditor(editQuizNumber, editQuestionNumber);
+			return;
+		}
+		/*
+		Do not include the openQuizEditor and openQuestionEditor in the dependencies
+		because the methods depend on the attribute quizPackageList and this is changed
+		on every input of the user and this would result in an infinite loop
+		 */
+		//eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [editQuizNumber, editQuestionNumber]);
 
 	return (
 		<div className={styles.initView}>
@@ -336,8 +352,6 @@ export default function InitQuiz() {
 							onQuizPackageSelect={sendQuizPackageToServer}
 							onQuizPackageEdit={(quizPackageIndex: number) => {
 								setEditQuizNumber(quizPackageIndex);
-								setEditQuestionNumber(null);
-								setEditorIsOpen(true);
 							}}
 						/>
 					</>
