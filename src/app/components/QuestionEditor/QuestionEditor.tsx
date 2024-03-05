@@ -20,7 +20,10 @@ import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-he
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
-import { fileToBase64Data } from "@/app/includes/ts/file-converter-functions";
+import {
+	fileToBase64Data,
+	getReadableByteSizeString,
+} from "@/app/includes/ts/file-converter-functions";
 import { showErrorMessageToUser } from "@/app/includes/ts/frontend/userFeedback/PopUp";
 
 export type OnQuestionEntryUpdate = (questionEntry: QuestionEntry) => void;
@@ -34,6 +37,8 @@ export default function QuestionEditor({
 	onQuestionEntryUpdate: OnQuestionEntryUpdate;
 }) {
 	const [questionEntry, setQuestionEntry] = useState<QuestionEntry>(questionEntryJSON);
+	const [fileSizeInByte, setFileSizeInByte] = useState<number>(0);
+	const [fileSizeReadable, setFileSizeReadable] = useState<string>("");
 	const getNumberAnswers = () => questionEntry.answers.length;
 
 	const isFirstAnswer = (answerNumber: number) => answerNumber === 0;
@@ -54,6 +59,16 @@ export default function QuestionEditor({
 			}
 		});
 	}, []);
+
+	useEffect(() => {
+		if (!questionEntry.image) {
+			setFileSizeInByte(0);
+			return;
+		}
+		const fileSize = new TextEncoder().encode(questionEntry.image.base64).length;
+		setFileSizeInByte(fileSize);
+		setFileSizeReadable(getReadableByteSizeString(fileSize));
+	}, [questionEntry.image]);
 
 	const handleAnswerIsCorrectToggle = (index: number) => {
 		setQuestionEntry((prev) => {
@@ -140,6 +155,7 @@ export default function QuestionEditor({
 				</h3>
 				{questionEntry.image ? (
 					<>
+						<div>Gespeicherte Größe: {fileSizeReadable}</div>
 						<Button
 							variant="danger"
 							className="mb-2"

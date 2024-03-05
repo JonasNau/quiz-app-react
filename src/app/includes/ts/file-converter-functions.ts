@@ -6,3 +6,14 @@ export function fileToBase64Data(file: File): Promise<string | ArrayBuffer | nul
 		reader.onerror = reject;
 	});
 }
+
+export function getReadableByteSizeString(byteSize: number) {
+	var i = -1;
+	var byteUnits = [" kB", " MB", " GB", " TB", "PB", "EB", "ZB", "YB"];
+	do {
+		byteSize /= 1024;
+		i++;
+	} while (byteSize > 1024);
+
+	return Math.max(byteSize, 0.1).toFixed(1) + byteUnits[i];
+}

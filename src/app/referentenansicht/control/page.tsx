@@ -193,6 +193,9 @@ export default function ControlView() {
 				<Row>
 					<Col className={`col-12 col-xl-4 ${styles.controller}`}>
 						<h2 className="text-center">Controller</h2>
+						<div className="text-center">
+							<RootLink text="Zur Übersicht" />
+						</div>
 						<Container className="content">
 							<Row>
 								<Col className="col-12 col-md-6 col-xl-12 d-flex flex-column align-items-center justify-content-center">
@@ -301,10 +304,6 @@ export default function ControlView() {
 					</Col>
 				</Row>
 			</Container>
-
-			<footer className={styles.footer}>
-				<RootLink text="Zur Übersicht" />
-			</footer>
 		</>
 	);
 }

@@ -33,6 +33,7 @@ import withReactContent from "sweetalert2-react-content";
 import Swal from "sweetalert2";
 import QuestionEditor from "@/app/components/QuestionEditor/QuestionEditor";
 import { createRoot } from "react-dom/client";
+import { getReadableByteSizeString } from "@/app/includes/ts/file-converter-functions";
 
 const QuizPackageList_LocalStorage_Name = "quiz-json-list";
 
@@ -67,13 +68,22 @@ export default function InitQuiz() {
 
 	const [editQuizNumber, setEditQuizNumber] = useState<number | null>(null);
 	const [editQuestionNumber, setEditQuestionNumber] = useState<number | null>(null);
+	const [fileSizeInByte, setFileSizeInByte] = useState<number>(0);
+	const [fileSizeReadable, setFileSizeReadable] = useState<string>("");
 
 	const updateQuizPackageListLocalStorage = useCallback(
 		(quizPackageListLocalStorageString: string) => {
-			localStorage.setItem(
-				QuizPackageList_LocalStorage_Name,
-				quizPackageListLocalStorageString
-			);
+			try {
+				localStorage.setItem(
+					QuizPackageList_LocalStorage_Name,
+					quizPackageListLocalStorageString
+				);
+			} catch (error) {
+				showErrorMessageToUser({
+					message:
+						"Die Quizdaten konnten nicht im Browser abgespeichert werden. Es könnte sein, dass die maximale Größe überschritten wurde.",
+				});
+			}
 		},
 		[]
 	);
@@ -129,6 +139,12 @@ export default function InitQuiz() {
 			socketIOClient.close();
 		};
 	}, [router, updateQuizPackageListLocalStorage]);
+
+	useEffect(() => {
+		const fileSize = new TextEncoder().encode(quizPackageListString).length;
+		setFileSizeInByte(fileSize);
+		setFileSizeReadable(getReadableByteSizeString(fileSize));
+	}, [quizPackageListString]);
 
 	const getQuizPackageListFromString = (string: string): QuizPackageList | null => {
 		try {
@@ -362,6 +378,7 @@ export default function InitQuiz() {
 				)}
 				<h2>Quiz-JSON bearbeiten (erweitert)</h2>
 				<div className="code-section">
+					<div className="text-center mb-2">Gespeicherte Größe: {fileSizeReadable}</div>
 					<ButtonToolbar className="code-editor-toolbar d-flex flex-row justify-content-center">
 						<Button variant="danger" className="me-2" onClick={handleDelete}>
 							Löschen
