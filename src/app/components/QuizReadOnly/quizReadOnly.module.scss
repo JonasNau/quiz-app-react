@@ -3,5 +3,16 @@
 		.question {
 			font-size: 2rem;
 		}
+		.image-wrapper {
+			resize: both;
+			overflow: auto;
+		}
+		.image {
+			margin: 0.5rem;
+			max-width: 100%;
+			max-height: 100%;
+			display: block;
+			margin: auto auto;
+		}
 	}
 }

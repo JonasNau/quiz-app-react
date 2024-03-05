@@ -10,7 +10,12 @@ export interface AnswerEntry {
 
 export interface QuestionEntry {
   answers: AnswerEntry[];
+  image?: QuestionEntryImage;
   question: string;
+}
+
+export interface QuestionEntryImage {
+  base64: string;
 }
 
 export type QuizData = QuestionEntry[];

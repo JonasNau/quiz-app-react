@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.scss";
 import "@/app/includes/scss/modules/backgrounds.scss";
+import "@/app/includes/scss/modules/borders.scss";
 //Styles
 import "bootstrap/dist/css/bootstrap.min.css";
 

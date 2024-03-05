@@ -2,6 +2,7 @@ import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { lintGutter, linter } from "@codemirror/lint";
 import ReactCodeMirror, { ViewUpdate, oneDark } from "@uiw/react-codemirror";
 import React, { useEffect, useState } from "react";
+import styles from "./JSONCodeEditor.module.scss";
 
 export type OnCodeUpdate = (value: string) => void;
 
@@ -27,7 +28,7 @@ export default function JSONCodeEditor({
 	};
 
 	return (
-		<>
+		<div className={styles.jsonCodeEditor}>
 			<ReactCodeMirror
 				className="code-editor"
 				theme={oneDark}
@@ -35,6 +36,6 @@ export default function JSONCodeEditor({
 				onChange={handleCodeUpdate}
 				extensions={[json(), linter(jsonParseLinter()), lintGutter()]}
 			/>
-		</>
+		</div>
 	);
 }

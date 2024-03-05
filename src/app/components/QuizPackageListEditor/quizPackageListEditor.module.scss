@@ -25,6 +25,7 @@
 			}
 			.content {
 				flex-grow: 1;
+				min-width: 0; /*Disable min-witdh: auto if the item needs to shrink because of the size of the parent https://stackoverflow.com/questions/36230944/prevent-flex-items-from-overflowing-a-container */
 
 				.quiz-name {
 					flex-grow: 1;

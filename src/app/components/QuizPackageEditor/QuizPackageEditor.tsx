@@ -71,6 +71,7 @@ export default function QuizPackageEditor({
 
 	return (
 		<div className={styles.quizPackageEditor}>
+			<h3 style={{ textAlign: "start" }}>Name des Quiz</h3>
 			<Form.Control
 				as="textarea"
 				value={quizPackage.name}
@@ -84,6 +85,9 @@ export default function QuizPackageEditor({
 					});
 				}}
 			/>
+			<h3 style={{ textAlign: "start" }} className="mt-2">
+				Beschreibung des Quiz
+			</h3>
 			<Form.Control
 				as="textarea"
 				value={quizPackage.description}
@@ -97,7 +101,7 @@ export default function QuizPackageEditor({
 					});
 				}}
 			/>
-			<h2>Fragen, die im Quiz enthalten sind</h2>
+			<h2 className="mt-2">Fragen, die im Quiz enthalten sind</h2>
 			<div className="overview">
 				<DndProvider backend={HTML5Backend}>
 					{quizPackage.quizData.map((questionEntry, index) => {
@@ -118,12 +122,16 @@ export default function QuizPackageEditor({
 								>
 									<div className="border-bottom-provider">
 										<div className="question-entry">
-											<div className="content d-flex align-items-center justify-content-center">
+											<div
+												className="content d-flex align-items-center justify-content-center"
+												title={`${questionEntry.question}`}
+											>
 												<div className="index">{index + 1}</div>
 												<div className="question">{questionEntry.question}</div>
 												<ButtonGroup>
 													<Button
 														variant="success"
+														title="Frage Bearbeiten"
 														onClick={(
 															event: React.MouseEvent<HTMLButtonElement, MouseEvent>
 														) => {
@@ -135,6 +143,7 @@ export default function QuizPackageEditor({
 
 													<Button
 														variant="primary"
+														title="Nach vorne schieben"
 														disabled={isFirstQuestion(index)}
 														onClick={(event) => {
 															if (isFirstQuestion(index)) return;
@@ -154,6 +163,7 @@ export default function QuizPackageEditor({
 													</Button>
 													<Button
 														variant="primary"
+														title="Nach hinten schieben"
 														disabled={isLastQuestion(index)}
 														onClick={(event) => {
 															if (isLastQuestion(index)) return;
@@ -173,6 +183,7 @@ export default function QuizPackageEditor({
 													</Button>
 													<Button
 														variant="danger"
+														title="Frage Löschen"
 														onClick={(event) => deleteQuestionEntryAtIndex(index)}
 													>
 														<FontAwesomeIcon icon={faTrashCan} />

@@ -125,11 +125,15 @@ export default function QuizPackageListEditor({
 			title: <i>Hier ist der JSON-Code des Quizzes:</i>,
 			html: (
 				<>
-					<JSONCodeEditor code={JSON.stringify(quizPackage)} onCodeUpdate={() => {}} />
+					<JSONCodeEditor
+						code={JSON.stringify(quizPackage, null, 2)}
+						onCodeUpdate={() => {}}
+					/>
 				</>
 			),
 			showConfirmButton: true,
 			showCancelButton: true,
+			grow: "fullscreen",
 		});
 	}, []);
 
@@ -151,11 +155,15 @@ export default function QuizPackageListEditor({
 							>
 								<div className="border-bottom-provider">
 									<div className="quizPackageList-entry">
-										<div className="content d-flex align-items-center justify-content-center">
+										<div
+											className="content d-flex align-items-center justify-content-center"
+											title={quizEntry.name}
+										>
 											<div className="quiz-name">{quizEntry.name}</div>
 											<ButtonGroup>
 												<Button
 													variant="success"
+													title="Quiz bearbeiten"
 													onClick={(
 														event: React.MouseEvent<HTMLButtonElement, MouseEvent>
 													) => {
@@ -166,6 +174,7 @@ export default function QuizPackageListEditor({
 												</Button>
 												<Button
 													variant="info"
+													title="Quiz exportieren"
 													onClick={(event) => {
 														showQuizPackageJSONString(quizEntry);
 													}}
@@ -174,6 +183,7 @@ export default function QuizPackageListEditor({
 												</Button>
 												<Button
 													variant="primary"
+													title="Quiz verwenden und hochladen"
 													onClick={(event) => {
 														onQuizPackageSelect(quizEntry);
 													}}
@@ -183,6 +193,7 @@ export default function QuizPackageListEditor({
 
 												<Button
 													variant="primary"
+													title="Quiz nach oben verschieben"
 													disabled={isFirstQuizPackage(index)}
 													onClick={(event) => {
 														if (isFirstQuizPackage(index)) return;
@@ -195,6 +206,7 @@ export default function QuizPackageListEditor({
 												</Button>
 												<Button
 													variant="primary"
+													title="Quiz nach unten verschieben"
 													disabled={isLastQuizPackage(index)}
 													onClick={(event) => {
 														if (isLastQuizPackage(index)) return;
@@ -207,6 +219,7 @@ export default function QuizPackageListEditor({
 												</Button>
 												<Button
 													variant="danger"
+													title="Quiz löschen"
 													onClick={(event) => deleteQuizPackageAtIndex(index)}
 												>
 													<FontAwesomeIcon icon={faTrashCan} />

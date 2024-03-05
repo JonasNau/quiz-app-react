@@ -85,7 +85,7 @@ export default function InitQuiz() {
 			quizJSONListString === null ||
 			(typeof quizJSONListString === "string" && quizJSONListString.length == 0)
 		) {
-			quizJSONListString = "[]";
+			quizJSONListString = JSON.stringify(templateQuizPackageList);
 		}
 		setQuizPackageListString(quizJSONListString);
 		updateQuizPackageListLocalStorage(quizJSONListString);
@@ -210,6 +210,7 @@ export default function InitQuiz() {
 		(code: string) => {
 			if (!loadedQuizJSON) return;
 			setQuizPackageListString(code);
+			updateQuizPackageListLocalStorage(code);
 
 			const quizJSON = getQuizPackageListFromString(code);
 			if (quizJSON) {
@@ -217,8 +218,6 @@ export default function InitQuiz() {
 			} else {
 				setQuizPackageList(null);
 			}
-
-			updateQuizPackageListLocalStorage(code);
 		},
 		[loadedQuizJSON, updateQuizPackageListLocalStorage]
 	);
@@ -317,17 +316,14 @@ export default function InitQuiz() {
 	);
 
 	useEffect(() => {
-		console.debug("Quiz:", editQuizNumber, "Question:", editQuestionNumber);
 		if (editQuizNumber === null && editQuestionNumber === null) return;
 
 		if (editQuizNumber !== null && editQuestionNumber === null) {
-			console.debug("open quiz editor");
 			openQuizEditor(editQuizNumber);
 			return;
 		}
 
 		if (editQuizNumber !== null && editQuestionNumber !== null) {
-			console.debug("open question editor");
 			openQuestionEditor(editQuizNumber, editQuestionNumber);
 			return;
 		}
@@ -338,6 +334,10 @@ export default function InitQuiz() {
 		 */
 		//eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [editQuizNumber, editQuestionNumber]);
+
+	useEffect(() => {
+		console.log({ quizPackageListString });
+	}, [quizPackageListString]);
 
 	return (
 		<div className={styles.initView}>

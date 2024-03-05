@@ -5,8 +5,13 @@ export const AnswerEntrySchema = Joi.object({
 	isCorrect: Joi.boolean().required(),
 }).meta({ className: "AnswerEntry" });
 
+export const QuestionEntryImageSchema = Joi.object({
+	base64: Joi.string().required(),
+}).meta({ className: "QuestionEntryImage" });
+
 export const QuestionEntrySchema = Joi.object({
 	question: Joi.string().required().allow(""),
+	image: QuestionEntryImageSchema.optional(),
 	answers: Joi.array().items(AnswerEntrySchema).required(),
 }).meta({ className: "QuestionEntry" });
 

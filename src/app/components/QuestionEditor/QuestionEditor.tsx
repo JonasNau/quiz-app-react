@@ -12,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useRef, useState } from "react";
-import { Button, ButtonGroup, Form } from "react-bootstrap";
+import { Button, ButtonGroup, Form, Image } from "react-bootstrap";
 import styles from "./questionEditor.module.scss";
 import { moveArrayItem } from "@/app/includes/ts/object-utils";
 import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-helper-functions";
@@ -20,6 +20,8 @@ import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-he
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
+import { fileToBase64Data } from "@/app/includes/ts/file-converter-functions";
+import { showErrorMessageToUser } from "@/app/includes/ts/frontend/userFeedback/PopUp";
 
 export type OnQuestionEntryUpdate = (questionEntry: QuestionEntry) => void;
 export type OnEditorClose = () => void;
@@ -87,9 +89,40 @@ export default function QuestionEditor({
 		});
 	};
 
+	const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+		const files = event.target.files;
+		if (!files) return;
+		const file = files[0];
+
+		try {
+			const base64ImageData = await fileToBase64Data(file);
+			if (base64ImageData === null) {
+				throw new Error("Reading file returned null");
+			}
+
+			if (typeof base64ImageData === "string") {
+				setQuestionEntry((prev) => {
+					return { ...prev, image: { base64: base64ImageData } };
+				});
+			} else {
+				const decoder = new TextDecoder();
+				const str = decoder.decode(base64ImageData);
+				setQuestionEntry((prev) => {
+					return { ...prev, image: { base64: str } };
+				});
+			}
+		} catch (error) {
+			showErrorMessageToUser({
+				message: "Der Dateiupload ist fehlgeschlagen. Versuche es erneut.",
+			});
+		}
+	};
+
 	return (
 		<div className={styles.questionEditor}>
 			<div className="question">
+				<h3 style={{ textAlign: "start" }}>Fragetext</h3>
+
 				<Form.Control
 					as="textarea"
 					value={questionEntry.question}
@@ -102,13 +135,46 @@ export default function QuestionEditor({
 						});
 					}}
 				/>
+				<h3 style={{ textAlign: "start" }} className="mt-2">
+					Bild
+				</h3>
+				{questionEntry.image ? (
+					<>
+						<Button
+							variant="danger"
+							className="mb-2"
+							onClick={(event) =>
+								setQuestionEntry((prev) => {
+									return { ...prev, image: undefined };
+								})
+							}
+						>
+							Bild entfernen <FontAwesomeIcon icon={faTrashCan} />
+						</Button>
+						<div className="image-wrapper">
+							<Image
+								className={`image image-box-shadow `}
+								src={questionEntry.image.base64}
+								alt="Bild für die Fragestellung"
+							/>
+						</div>
+					</>
+				) : (
+					<>
+						<Form.Group controlId="formFile" className="mb-3">
+							<Form.Control type="file" onChange={onFileChange} />
+						</Form.Group>
+					</>
+				)}
 			</div>
+			<h3 style={{ textAlign: "start" }} className="mt-2">
+				Antwortmöglichkeiten
+			</h3>
 			<div className="answer-list">
 				<DndProvider backend={HTML5Backend}>
 					{questionEntry.answers.map((answer, index) => {
 						return (
 							<div key={index}>
-								<hr />
 								<DraggableListItem
 									type="answer-entry"
 									index={index}
@@ -235,7 +301,6 @@ export default function QuestionEditor({
 						<FontAwesomeIcon icon={faPlus} style={{ marginLeft: "0.25rem" }} />
 					</Button>
 				</section>
-				<hr />
 			</div>
 		</div>
 	);

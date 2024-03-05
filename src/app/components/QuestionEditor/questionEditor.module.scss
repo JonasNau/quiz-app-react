@@ -2,9 +2,19 @@
 
 .questionEditor {
 	:global {
-		.question textarea {
-			font-size: 1.5rem;
-			overflow: hidden;
+		textarea {
+			font-size: 1.4rem;
+			box-shadow: rgba(0, 0, 0, 0.2) 0px 5px 15px;
+		}
+		.image-wrapper {
+			resize: both;
+			overflow: auto;
+		}
+		.image {
+			max-width: 100%;
+			max-height: 100%;
+			display: block;
+			margin: auto auto;
 		}
 		.answer-entry {
 			border-radius: 20px;
@@ -24,6 +34,7 @@
 
 			.content {
 				flex-grow: 1;
+				min-width: 0; /*Disable min-witdh: auto if the item needs to shrink because of the size of the parent https://stackoverflow.com/questions/36230944/prevent-flex-items-from-overflowing-a-container */
 				.answer-input {
 					overflow: hidden;
 					font-size: 1.35rem;

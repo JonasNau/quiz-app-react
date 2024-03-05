@@ -7,7 +7,7 @@
 		"dev:start": "concurrently  \" npm run dev:nextjs:express\" \"npm run dev:watch-schema\" -n \"Server,Build-Schamas\"",
 		"dev:nextjs:express": "nodemon --exec \"npx ts-node -r tsconfig-paths/register ./src/server/application.ts\" --watch ./src/server --ext *",
 		"dev:watch-schema": "npx watch \"npm run joi-to-typescript:convert\" ./src/schemas/joi",
-		"joi-to-typescript:convert": "ts-node ./scripts/convertJoiTypesToTypescriptInterfaces.ts",
+		"joi-to-typescript:convert": "npx ts-node -r tsconfig-paths/register ./scripts/convertJoiTypesToTypescriptInterfaces.ts",
 		"build:next": "next build",
 		"build:express": "rimraf ./dist && tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json",
 		"build": "npm run build:next && npm run build:express",
