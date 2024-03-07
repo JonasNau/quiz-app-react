@@ -34,17 +34,11 @@ export default function QuizReadOnly({
 						resizeRatio={1}
 						lockAspectRatio={true}
 					>
-						<a
-							onClick={() => {
-								console.log(questionEntry.image);
-							}}
-						>
-							<Image
-								className={`image image-box-shadow`}
-								src={questionEntry.image.base64}
-								alt="Bild für die Fragestellung"
-							/>
-						</a>
+						<Image
+							className={`image image-box-shadow`}
+							src={questionEntry.image.base64}
+							alt="Bild für die Fragestellung"
+						/>
 					</Resizable>
 				</div>
 			)}

@@ -240,93 +240,97 @@ export default function InitQuiz() {
 
 	const openQuizEditor = useCallback(
 		(editQuizNumber: number) => {
-			if (!quizPackageList) {
-				return;
-			}
+			setTimeout(() => {
+				if (!quizPackageList) {
+					return;
+				}
 
-			let newQuizPackage: QuizPackage = quizPackageList[editQuizNumber];
+				let newQuizPackage: QuizPackage = quizPackageList[editQuizNumber];
 
-			withReactContent(Swal).fire({
-				title: "Quiz bearbeiten",
-				html: (
-					<>
-						<QuizPackageEditor
-							quizJSON={newQuizPackage}
-							onQuestionEdit={(questionIndex: number) => {
-								setEditQuestionNumber(questionIndex);
-							}}
-							onQuizPackageUpdate={(updateedQuizPackage: QuizPackage) => {
-								setQuizPackageList((prev) => {
-									if (!prev) return prev;
-									return prev.map((quizPackage: QuizPackage, index: number) => {
-										if (editQuizNumber === index) return updateedQuizPackage;
-										return quizPackage;
+				withReactContent(Swal).fire({
+					title: "Quiz bearbeiten",
+					html: (
+						<>
+							<QuizPackageEditor
+								quizJSON={newQuizPackage}
+								onQuestionEdit={(questionIndex: number) => {
+									setEditQuestionNumber(questionIndex);
+								}}
+								onQuizPackageUpdate={(updateedQuizPackage: QuizPackage) => {
+									setQuizPackageList((prev) => {
+										if (!prev) return prev;
+										return prev.map((quizPackage: QuizPackage, index: number) => {
+											if (editQuizNumber === index) return updateedQuizPackage;
+											return quizPackage;
+										});
 									});
-								});
-							}}
-						/>
-						.
-					</>
-				),
-				showCloseButton: true,
-				didClose() {
-					setEditQuizNumber(null);
-				},
-				didDestroy() {},
-				grow: "fullscreen",
-			});
+								}}
+							/>
+							.
+						</>
+					),
+					showCloseButton: true,
+					didClose() {
+						setEditQuizNumber(null);
+					},
+					didDestroy() {},
+					grow: "fullscreen",
+				});
+			}, 0);
 		},
 		[quizPackageList]
 	);
 	const openQuestionEditor = useCallback(
 		(editQuizNumber: number, editQuestionNumber: number) => {
-			if (!quizPackageList) {
-				return;
-			}
+			setTimeout(() => {
+				if (!quizPackageList) {
+					return;
+				}
 
-			withReactContent(Swal).fire({
-				title: "Frage bearbeiten",
-				showCloseButton: true,
-				html: (
-					<>
-						<QuestionEditor
-							questionEntryJSON={
-								quizPackageList[editQuizNumber].quizData[editQuestionNumber]
-							}
-							onQuestionEntryUpdate={(updatedQuestionEntry: QuestionEntry) => {
-								if (!quizPackageList) return;
-								setQuizPackageList((prev) => {
-									if (!prev) return prev;
-									return prev.map(
-										(quizPackage: QuizPackage, quizPackageIndex: number) => {
-											if (editQuizNumber === quizPackageIndex)
-												return {
-													...prev[editQuizNumber],
-													quizData: prev[editQuizNumber].quizData.map(
-														(
-															questionEntry: QuestionEntry,
-															questionEntryIndex: number
-														) => {
-															if (questionEntryIndex === editQuestionNumber)
-																return updatedQuestionEntry;
-															return questionEntry;
-														}
-													),
-												};
-											return quizPackage;
-										}
-									);
-								});
-							}}
-						/>
-					</>
-				),
-				didClose() {
-					setEditQuestionNumber(null);
-				},
-				didDestroy() {},
-				grow: "fullscreen",
-			});
+				withReactContent(Swal).fire({
+					title: "Frage bearbeiten",
+					showCloseButton: true,
+					html: (
+						<>
+							<QuestionEditor
+								questionEntryJSON={
+									quizPackageList[editQuizNumber].quizData[editQuestionNumber]
+								}
+								onQuestionEntryUpdate={(updatedQuestionEntry: QuestionEntry) => {
+									if (!quizPackageList) return;
+									setQuizPackageList((prev) => {
+										if (!prev) return prev;
+										return prev.map(
+											(quizPackage: QuizPackage, quizPackageIndex: number) => {
+												if (editQuizNumber === quizPackageIndex)
+													return {
+														...prev[editQuizNumber],
+														quizData: prev[editQuizNumber].quizData.map(
+															(
+																questionEntry: QuestionEntry,
+																questionEntryIndex: number
+															) => {
+																if (questionEntryIndex === editQuestionNumber)
+																	return updatedQuestionEntry;
+																return questionEntry;
+															}
+														),
+													};
+												return quizPackage;
+											}
+										);
+									});
+								}}
+							/>
+						</>
+					),
+					didClose() {
+						setEditQuestionNumber(null);
+					},
+					didDestroy() {},
+					grow: "fullscreen",
+				});
+			}, 0);
 		},
 		[quizPackageList]
 	);
@@ -350,10 +354,6 @@ export default function InitQuiz() {
 		 */
 		//eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [editQuizNumber, editQuestionNumber]);
-
-	useEffect(() => {
-		console.log({ quizPackageListString });
-	}, [quizPackageListString]);
 
 	return (
 		<div className={styles.initView}>

@@ -1,7 +1,7 @@
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { lintGutter, linter } from "@codemirror/lint";
 import ReactCodeMirror, { ViewUpdate, oneDark } from "@uiw/react-codemirror";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./JSONCodeEditor.module.scss";
 
 export type OnCodeUpdate = (value: string) => void;
@@ -19,12 +19,9 @@ export default function JSONCodeEditor({
 		setCode(initialCode);
 	}, [initialCode]);
 
-	useEffect(() => {
-		onCodeUpdate(code);
-	}, [code, onCodeUpdate]);
-
 	const handleCodeUpdate = (value: string, viewUpdate: ViewUpdate) => {
 		setCode(value);
+		onCodeUpdate(value);
 	};
 
 	return (
