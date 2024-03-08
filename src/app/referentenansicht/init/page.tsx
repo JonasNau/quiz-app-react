@@ -64,7 +64,6 @@ export default function InitQuiz() {
 	const [quizPackageListString, setQuizPackageListString] = useState<string>("");
 	const [quizPackageList, setQuizPackageList] = useState<QuizPackageList | null>();
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
-	const [loadedQuizJSON, setLoadedQuizJSON] = useState<boolean>(false);
 
 	const [editQuizNumber, setEditQuizNumber] = useState<number | null>(null);
 	const [editQuestionNumber, setEditQuestionNumber] = useState<number | null>(null);
@@ -88,6 +87,26 @@ export default function InitQuiz() {
 		[]
 	);
 
+	const updateQuizPackageList = useCallback(
+		(quizPackageList: QuizPackageList) => {
+			setQuizPackageList(quizPackageList);
+			const quizPackageListString = JSON.stringify(quizPackageList);
+			setQuizPackageListString(quizPackageListString);
+			updateQuizPackageListLocalStorage(quizPackageListString);
+		},
+		[updateQuizPackageListLocalStorage]
+	);
+
+	const updateQuizPackageListString = useCallback(
+		(quizPackageListString: string) => {
+			const quizPackageList = getQuizPackageListFromString(quizPackageListString);
+			setQuizPackageList(quizPackageList);
+			setQuizPackageListString(quizPackageListString);
+			updateQuizPackageListLocalStorage(quizPackageListString);
+		},
+		[updateQuizPackageListLocalStorage]
+	);
+
 	useEffect(() => {
 		//Read quiz-json from local storage
 		let quizJSONListString = localStorage.getItem(QuizPackageList_LocalStorage_Name);
@@ -97,17 +116,8 @@ export default function InitQuiz() {
 		) {
 			quizJSONListString = JSON.stringify(templateQuizPackageList);
 		}
-		setQuizPackageListString(quizJSONListString);
-		updateQuizPackageListLocalStorage(quizJSONListString);
 
-		setLoadedQuizJSON(true);
-
-		const quizJSONList = getQuizPackageListFromString(quizJSONListString);
-		if (quizJSONList) {
-			setQuizPackageList(quizJSONList);
-		} else {
-			setQuizPackageList(null);
-		}
+		updateQuizPackageListString(quizJSONListString);
 
 		//Create Socket IO Client
 		const socketIOClient = io({});
@@ -138,7 +148,7 @@ export default function InitQuiz() {
 		return () => {
 			socketIOClient.close();
 		};
-	}, [router, updateQuizPackageListLocalStorage]);
+	}, [router, updateQuizPackageListLocalStorage, updateQuizPackageListString]);
 
 	useEffect(() => {
 		const fileSize = new TextEncoder().encode(quizPackageListString).length;
@@ -156,9 +166,7 @@ export default function InitQuiz() {
 	};
 
 	const handleDelete = (event: SyntheticEvent<HTMLButtonElement>) => {
-		setQuizPackageList([]);
-		setQuizPackageListString("[]");
-		updateQuizPackageListLocalStorage("[]");
+		updateQuizPackageList([]);
 	};
 
 	const sendQuizPackageToServer = (quizPackage: QuizPackage) => {
@@ -182,60 +190,45 @@ export default function InitQuiz() {
 	const handleAutoFormatCode = useCallback(async () => {
 		try {
 			const formatted = JSON.stringify(JSON.parse(quizPackageListString), null, 2);
-			setQuizPackageListString(formatted);
-			updateQuizPackageListLocalStorage(formatted);
+			updateQuizPackageListString(formatted);
 		} catch (error) {
 			showErrorMessageToUser({
 				message: "Die JSON-Datei kann nicht formatiert werden, da sie nicht valide ist.",
 			});
 		}
-	}, [quizPackageListString, updateQuizPackageListLocalStorage]);
+	}, [quizPackageListString, updateQuizPackageListString]);
 
 	const handleFormatCodeMinify = useCallback(async () => {
 		try {
 			const formatted = JSON.stringify(JSON.parse(quizPackageListString));
-			setQuizPackageListString(formatted);
-			updateQuizPackageListLocalStorage(formatted);
+			updateQuizPackageListString(formatted);
 		} catch (error) {
 			showErrorMessageToUser({
 				message: "Die JSON-Datei kann nicht formatiert werden, da sie nicht valide ist.",
 			});
 		}
-	}, [quizPackageListString, updateQuizPackageListLocalStorage]);
+	}, [quizPackageListString, updateQuizPackageListString]);
 
 	const handleTemplate = useCallback(
 		(event: SyntheticEvent<HTMLButtonElement>) => {
 			const newData = JSON.stringify(templateQuizPackageList);
-			setQuizPackageList(templateQuizPackageList);
-			setQuizPackageListString(newData);
-			updateQuizPackageListLocalStorage(newData);
+			updateQuizPackageList(templateQuizPackageList);
 		},
-		[updateQuizPackageListLocalStorage]
+		[updateQuizPackageList]
 	);
 
 	const onQuizPackageListUpdate = useCallback(
 		(quizPackageList: QuizPackageList) => {
-			setQuizPackageList(quizPackageList);
-			setQuizPackageListString(JSON.stringify(quizPackageList));
-			updateQuizPackageListLocalStorage(JSON.stringify(quizPackageList));
+			updateQuizPackageList(quizPackageList);
 		},
-		[setQuizPackageListString, updateQuizPackageListLocalStorage]
+		[updateQuizPackageList]
 	);
 
 	const onQuizPackageListJSONCodeChange = useCallback(
 		(code: string) => {
-			if (!loadedQuizJSON) return;
-			setQuizPackageListString(code);
-			updateQuizPackageListLocalStorage(code);
-
-			const quizJSON = getQuizPackageListFromString(code);
-			if (quizJSON) {
-				setQuizPackageList(quizJSON);
-			} else {
-				setQuizPackageList(null);
-			}
+			updateQuizPackageListString(code);
 		},
-		[loadedQuizJSON, updateQuizPackageListLocalStorage]
+		[updateQuizPackageListString]
 	);
 
 	const openQuizEditor = useCallback(
@@ -257,13 +250,12 @@ export default function InitQuiz() {
 									setEditQuestionNumber(questionIndex);
 								}}
 								onQuizPackageUpdate={(updateedQuizPackage: QuizPackage) => {
-									setQuizPackageList((prev) => {
-										if (!prev) return prev;
-										return prev.map((quizPackage: QuizPackage, index: number) => {
+									updateQuizPackageList(
+										quizPackageList.map((quizPackage: QuizPackage, index: number) => {
 											if (editQuizNumber === index) return updateedQuizPackage;
 											return quizPackage;
-										});
-									});
+										})
+									);
 								}}
 							/>
 							.
@@ -278,7 +270,7 @@ export default function InitQuiz() {
 				});
 			}, 0);
 		},
-		[quizPackageList]
+		[quizPackageList, updateQuizPackageList]
 	);
 	const openQuestionEditor = useCallback(
 		(editQuizNumber: number, editQuestionNumber: number) => {
@@ -298,14 +290,13 @@ export default function InitQuiz() {
 								}
 								onQuestionEntryUpdate={(updatedQuestionEntry: QuestionEntry) => {
 									if (!quizPackageList) return;
-									setQuizPackageList((prev) => {
-										if (!prev) return prev;
-										return prev.map(
+									setQuizPackageList(
+										quizPackageList.map(
 											(quizPackage: QuizPackage, quizPackageIndex: number) => {
 												if (editQuizNumber === quizPackageIndex)
 													return {
-														...prev[editQuizNumber],
-														quizData: prev[editQuizNumber].quizData.map(
+														...quizPackageList[editQuizNumber],
+														quizData: quizPackageList[editQuizNumber].quizData.map(
 															(
 																questionEntry: QuestionEntry,
 																questionEntryIndex: number
@@ -318,8 +309,8 @@ export default function InitQuiz() {
 													};
 												return quizPackage;
 											}
-										);
-									});
+										)
+									);
 								}}
 							/>
 						</>
