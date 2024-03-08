@@ -47,14 +47,17 @@ export default function QuizPackageListEditor({
 }) {
 	const [quizPackageList, setQuizPackageList] =
 		useState<QuizPackageList>(quizPackageListJSON);
+	const [updateActive, setUpdateActive] = useState(false);
 
 	useEffect(() => {
 		setQuizPackageList(quizPackageListJSON);
 	}, [quizPackageListJSON]);
 
 	useEffect(() => {
+		if (!updateActive) return;
+		setUpdateActive(false);
 		onQuizPackageListUpdate(quizPackageList);
-	}, [onQuizPackageListUpdate, quizPackageList]);
+	}, [onQuizPackageListUpdate, quizPackageList, updateActive]);
 
 	const getNumberQuizPackages = () => quizPackageList.length;
 
@@ -72,12 +75,14 @@ export default function QuizPackageListEditor({
 				{ name: "Quizname", description: "", quizData: [] },
 			] satisfies QuizPackageList;
 		});
+		setUpdateActive(true);
 	};
 
 	const deleteQuizPackageAtIndex = (index: number) => {
 		setQuizPackageList((prev) => {
 			return prev.filter((item, i) => i !== index);
 		});
+		setUpdateActive(true);
 	};
 
 	const importQuizViaJSON = useCallback(async () => {
@@ -111,6 +116,7 @@ export default function QuizPackageListEditor({
 				setQuizPackageList((prev) => {
 					return [...prev, quizPackage] satisfies QuizPackageList;
 				});
+				setUpdateActive(true);
 			} catch (error) {
 				await showErrorMessageToUser({
 					message: "Das Format der JSON ist nicht valide.",
@@ -151,6 +157,7 @@ export default function QuizPackageListEditor({
 									setQuizPackageList((prev) => {
 										return moveArrayItem(prev, dragIndex, hoverIndex);
 									});
+									setUpdateActive(true);
 								}}
 							>
 								<div className="border-bottom-provider">
@@ -200,6 +207,7 @@ export default function QuizPackageListEditor({
 														setQuizPackageList((prev) => {
 															return moveArrayItem(prev, index, index - 1);
 														});
+														setUpdateActive(true);
 													}}
 												>
 													<FontAwesomeIcon icon={faArrowUp} />
@@ -213,6 +221,7 @@ export default function QuizPackageListEditor({
 														setQuizPackageList((prev) => {
 															return moveArrayItem(prev, index, index + 1);
 														});
+														setUpdateActive(true);
 													}}
 												>
 													<FontAwesomeIcon icon={faArrowDown} />
