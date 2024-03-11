@@ -22,13 +22,14 @@ const ServerLogger = ServerLoggerProvider.getLogger();
 let quizPackage: QuizPackage | null = null;
 let currentQuestionNumber = 0;
 let showSolutions = false;
+let currentCounterValue = 0;
 
 const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
 app.prepare().then(() => {
 	const server = express();
 	const httpServer = http.createServer(server);
-	const io = new SocketIO.Server(httpServer, {});
+	const io = new SocketIO.Server(httpServer, { maxHttpBufferSize: Infinity });
 
 	io.on(ESocketEventNames.NEW_CONNECTIION, (socket: Socket) => {
 		if (GLOBAL_APPLICATION_CONFIG.MODE === ApplicationMode.DEV) {
@@ -59,6 +60,14 @@ app.prepare().then(() => {
 			socket
 				.in(ERoomNames.REFERENT_CONTROL)
 				.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, showSolutions);
+		};
+
+		const sendUpdateCurrentCounterValue = (number: number) => {
+			socket.in(ERoomNames.BEAMER).emit(ESocketEventNames.SEND_COUNTER_VALUE, number);
+
+			socket
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_COUNTER_VALUE, number);
 		};
 
 		const sendUpdateQuestionNumber = (questionNumber: number) => {
@@ -120,6 +129,11 @@ app.prepare().then(() => {
 			sendUpdateQuestionNumber(currentQuestionNumber);
 		});
 
+		socket.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
+			currentCounterValue = number;
+			sendUpdateCurrentCounterValue(currentCounterValue);
+		});
+
 		socket.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (newShowSolutions: boolean) => {
 			if (!quizPackage) {
 				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
@@ -132,6 +146,10 @@ app.prepare().then(() => {
 
 		socket.on(ESocketEventNames.GET_QUESTION_NUMBER, () => {
 			socket.emit(ESocketEventNames.SEND_QUESTION_NUMBER, currentQuestionNumber);
+		});
+
+		socket.on(ESocketEventNames.GET_COUNTER_VALUE, () => {
+			socket.emit(ESocketEventNames.SEND_COUNTER_VALUE, currentCounterValue);
 		});
 	});
 

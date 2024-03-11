@@ -31,15 +31,20 @@ import {
 	faArrowsLeftRightToLine,
 	faEye,
 	faEyeSlash,
+	faMinus,
+	faPlus,
+	faRefresh,
 	faRotateBack,
 	faRotateForward,
 	faRotateLeft,
 	faRotateRight,
 } from "@fortawesome/free-solid-svg-icons";
+import UserCounterWithIncrementAndDecrement from "@/app/components/UserCounter/UserCounterWithIncrementAndDecrement";
 
 export default function ControlView() {
 	const router = useRouter();
 	const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(0);
+	const [currentCounterValue, setCurrentCounterValue] = useState<number>(0);
 	const [showSolutions, setShowSolutions] = useState<boolean>(false);
 	const [showSolutionsInPreview, setShowSolutionsInPreview] = useState<boolean>(false);
 	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
@@ -53,6 +58,7 @@ export default function ControlView() {
 		setSocketIOClient(socketIOClient);
 		socketIOClient.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT_CONTROL);
 		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
+		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
 
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
@@ -87,6 +93,10 @@ export default function ControlView() {
 
 		socketIOClient.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
 			setCurrentQuestionNumber(number);
+		});
+
+		socketIOClient.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
+			setCurrentCounterValue(number);
 		});
 
 		socketIOClient.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (showSolutions: boolean) => {
@@ -163,6 +173,17 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.SEND_QUESTION_NUMBER, number);
 	};
 
+	const sendCurrentCounterValue = (number: number) => {
+		if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
+			showErrorMessageToUser({
+				message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
+			});
+			return;
+		}
+
+		socketIOClient.emit(ESocketEventNames.SEND_COUNTER_VALUE, number);
+	};
+
 	const sendShowSolutions = useCallback(
 		(showSolutions: boolean) => {
 			if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
@@ -185,6 +206,24 @@ export default function ControlView() {
 		},
 		[sendShowSolutions, showSolutions]
 	);
+
+	const currentCounterIncrement = () => {
+		const newValue = currentCounterValue + 1;
+		setCurrentCounterValue(newValue);
+		sendCurrentCounterValue(newValue);
+	};
+
+	const currentCounterDecrement = () => {
+		const newValue = currentCounterValue - 1;
+		setCurrentCounterValue(newValue);
+		sendCurrentCounterValue(newValue);
+	};
+
+	const currentCounterReset = () => {
+		const newValue = 0;
+		setCurrentCounterValue(newValue);
+		sendCurrentCounterValue(newValue);
+	};
 
 	return (
 		<>
@@ -282,6 +321,39 @@ export default function ControlView() {
 												</>
 											)}
 										</Button>
+									</section>
+									<section className="btn-counter">
+										<div className="text-center" style={{ fontWeight: "bold" }}>
+											Punkte:
+										</div>
+										<div className="number" onDoubleClick={() => currentCounterReset()}>
+											{currentCounterValue}
+										</div>
+
+										<Button
+											onClick={() => currentCounterDecrement()}
+											style={{ backgroundColor: "red" }}
+										>
+											{" "}
+											<FontAwesomeIcon
+												icon={faMinus}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</Button>
+										<Button
+											onClick={() => currentCounterIncrement()}
+											style={{ backgroundColor: "green" }}
+										>
+											<FontAwesomeIcon
+												icon={faPlus}
+												style={{ fontSize: 30, color: "black" }}
+											/>
+										</Button>
+									</section>
+									<section className="user-counters">
+										<UserCounterWithIncrementAndDecrement username="Jonas" count={0} />
+										<UserCounterWithIncrementAndDecrement username="Matthias" count={5} />
+										<UserCounterWithIncrementAndDecrement username="Ludwig" count={20} />
 									</section>
 								</Col>
 							</Row>

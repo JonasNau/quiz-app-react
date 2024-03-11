@@ -16,6 +16,7 @@ export default function BeamerAnsicht() {
 	const [waitingMessage, setWatingMessage] = useState<string>(
 		EWaitingMessage.WAITING_FOR_DATA
 	);
+	const [currentCounterValue, setCurrentCounterValue] = useState<number>(0);
 
 	useEffect(() => {
 		//Create Socket IO Client
@@ -26,6 +27,7 @@ export default function BeamerAnsicht() {
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
 		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
+		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
 			if (errorName === "NO_QUIZ_DATA") {
@@ -54,6 +56,10 @@ export default function BeamerAnsicht() {
 		socketIOClient.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (showSolutions: boolean) => {
 			setShowSolutions(showSolutions);
 		});
+
+		socketIOClient.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
+			setCurrentCounterValue(number);
+		});
 	}, []);
 
 	const socketIOClientIsDefinedAndConnected = (
@@ -68,11 +74,13 @@ export default function BeamerAnsicht() {
 		<>
 			<Container className={styles.componentContainer}>
 				<h1 className="text-center">Quiz</h1>
+
 				{quizPackage && quizPackage.quizData.length ? (
 					<div className={styles.quiz}>
 						<QuizReadOnly
 							questionEntry={quizPackage.quizData[currentQuestionNumber]}
 							showSolutions={showSolutions}
+							currentCounterValue={currentCounterValue}
 						/>
 					</div>
 				) : (

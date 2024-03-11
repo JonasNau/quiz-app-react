@@ -243,7 +243,11 @@ export default function QuizPackageListEditor({
 					);
 				})}
 			</DndProvider>
-			<hr />
+			{getNumberQuizPackages() > 0 && (
+				<>
+					<hr />
+				</>
+			)}
 			<section className="d-flex flex-row justify-content-center align-items-center">
 				<Button
 					variant="success"
