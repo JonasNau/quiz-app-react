@@ -15,6 +15,7 @@ import { QuizData, QuizPackage } from "@/interfaces/joi/QuizSchemas";
 import { Socket, io } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
 import {
+	askUserTextInput,
 	showErrorMessageAndAskUser,
 	showErrorMessageToUser,
 	showSuccessMessageAndAskUser,
@@ -38,8 +39,16 @@ import {
 	faRotateForward,
 	faRotateLeft,
 	faRotateRight,
+	faX,
 } from "@fortawesome/free-solid-svg-icons";
 import UserCounterWithIncrementAndDecrement from "@/app/components/UserCounter/UserCounterWithIncrementAndDecrement";
+
+type UserWithCount = {
+	username: string;
+	count: number;
+};
+
+type UserWithCountList = UserWithCount[];
 
 export default function ControlView() {
 	const router = useRouter();
@@ -49,6 +58,7 @@ export default function ControlView() {
 	const [showSolutionsInPreview, setShowSolutionsInPreview] = useState<boolean>(false);
 	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
+	const [userWithCountList, setUserWithCountList] = useState<UserWithCountList>([]);
 
 	const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
@@ -59,6 +69,21 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT_CONTROL);
 		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
 		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
+
+		setUserWithCountList([
+			{
+				username: "Jonas",
+				count: 0,
+			},
+			{
+				username: "Ludiwg",
+				count: 10,
+			},
+			{
+				username: "Matthias",
+				count: 15,
+			},
+		]);
 
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
@@ -351,9 +376,58 @@ export default function ControlView() {
 										</Button>
 									</section>
 									<section className="user-counters">
-										<UserCounterWithIncrementAndDecrement username="Jonas" count={0} />
-										<UserCounterWithIncrementAndDecrement username="Matthias" count={5} />
-										<UserCounterWithIncrementAndDecrement username="Ludwig" count={20} />
+										<div className="text-center" style={{ fontWeight: "bold" }}>
+											Benutzer-Punkte:
+										</div>
+										{userWithCountList &&
+											userWithCountList.length &&
+											userWithCountList.map((userdata, index) => {
+												return (
+													<div key={index} className="d-flex">
+														<Button
+															style={{
+																padding: 5,
+																height: "30px",
+																alignSelf: "center",
+																background: "none",
+																border: "none",
+															}}
+															className="d-flex align-items-center justify-content-center"
+														>
+															<FontAwesomeIcon
+																icon={faX}
+																style={{ fontSize: 10, color: "red" }}
+															></FontAwesomeIcon>
+														</Button>
+														<UserCounterWithIncrementAndDecrement
+															username={userdata.username}
+															count={userdata.count}
+														/>
+													</div>
+												);
+											})}
+										<Button
+											variant="success"
+											className="add-quiz"
+											style={{ marginRight: "1rem" }}
+											onClick={async () => {
+												const result = await askUserTextInput({
+													message: "Wie soll der Name des Benutzers sein?",
+													title: "Name eingeben",
+												});
+
+												if (!result.isConfirmed) return;
+
+												const value = result.value;
+
+												setUserWithCountList((prev) => {
+													return [...prev, { count: 0, username: value }];
+												});
+											}}
+										>
+											Benutzer hinzufügen
+											<FontAwesomeIcon icon={faPlus} style={{ marginLeft: "0.25rem" }} />
+										</Button>
 									</section>
 								</Col>
 							</Row>

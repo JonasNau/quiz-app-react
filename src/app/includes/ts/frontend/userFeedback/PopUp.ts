@@ -92,3 +92,20 @@ export async function showErrorMessageAndAskUser({
 		icon: "error",
 	});
 }
+
+export async function askUserTextInput({
+	message,
+	title = "Text eingeben",
+}: {
+	message: string;
+	title?: string;
+}) {
+	return await Swal.fire({
+		input: "text",
+		cancelButtonText: "Abbrechen",
+		confirmButtonText: "OK",
+		title: title,
+		text: message,
+		icon: "question",
+	});
+}
