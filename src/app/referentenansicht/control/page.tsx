@@ -42,13 +42,7 @@ import {
 	faX,
 } from "@fortawesome/free-solid-svg-icons";
 import UserCounterWithIncrementAndDecrement from "@/app/components/UserCounter/UserCounterWithIncrementAndDecrement";
-
-type UserWithCount = {
-	username: string;
-	count: number;
-};
-
-type UserWithCountList = UserWithCount[];
+import { UserWithCountList } from "@/interfaces/user-counter";
 
 export default function ControlView() {
 	const router = useRouter();
@@ -58,7 +52,9 @@ export default function ControlView() {
 	const [showSolutionsInPreview, setShowSolutionsInPreview] = useState<boolean>(false);
 	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
-	const [userWithCountList, setUserWithCountList] = useState<UserWithCountList>([]);
+	const [userWithCountList, setUserWithCountList] = useState<UserWithCountList | null>(
+		null
+	);
 
 	const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
@@ -69,21 +65,7 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT_CONTROL);
 		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
 		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
-
-		setUserWithCountList([
-			{
-				username: "Jonas",
-				count: 0,
-			},
-			{
-				username: "Ludiwg",
-				count: 10,
-			},
-			{
-				username: "Matthias",
-				count: 15,
-			},
-		]);
+		socketIOClient.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
 
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
@@ -119,6 +101,13 @@ export default function ControlView() {
 		socketIOClient.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
 			setCurrentQuestionNumber(number);
 		});
+
+		socketIOClient.on(
+			ESocketEventNames.SEND_USER_WITH_COUNT_LIST,
+			(userWithCountList: UserWithCountList) => {
+				setUserWithCountList(userWithCountList);
+			}
+		);
 
 		socketIOClient.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
 			setCurrentCounterValue(number);
@@ -207,6 +196,17 @@ export default function ControlView() {
 		}
 
 		socketIOClient.emit(ESocketEventNames.SEND_COUNTER_VALUE, number);
+	};
+
+	const sendUserWithCountList = (userWithCountList: UserWithCountList) => {
+		if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
+			showErrorMessageToUser({
+				message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
+			});
+			return;
+		}
+
+		socketIOClient.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
 	};
 
 	const sendShowSolutions = useCallback(
@@ -379,36 +379,58 @@ export default function ControlView() {
 										<div className="text-center" style={{ fontWeight: "bold" }}>
 											Benutzer-Punkte:
 										</div>
-										{userWithCountList &&
-											userWithCountList.length &&
-											userWithCountList.map((userdata, index) => {
-												return (
-													<div key={index} className="d-flex">
-														<Button
-															style={{
-																padding: 5,
-																height: "30px",
-																alignSelf: "center",
-																background: "none",
-																border: "none",
-															}}
-															className="d-flex align-items-center justify-content-center"
-														>
-															<FontAwesomeIcon
-																icon={faX}
-																style={{ fontSize: 10, color: "red" }}
-															></FontAwesomeIcon>
-														</Button>
-														<UserCounterWithIncrementAndDecrement
-															username={userdata.username}
-															count={userdata.count}
-														/>
-													</div>
-												);
-											})}
+										{userWithCountList && userWithCountList.length
+											? userWithCountList.map((userdata, index) => {
+													return (
+														<div key={index} className="d-flex mb-1">
+															<Button
+																onClick={() => {
+																	const newUserWithCountList = userWithCountList.filter(
+																		(current, i) => {
+																			if (i === index) return false;
+																			return true;
+																		}
+																	);
+
+																	setUserWithCountList(newUserWithCountList);
+																	sendUserWithCountList(newUserWithCountList);
+																}}
+																style={{
+																	padding: 5,
+																	height: "30px",
+																	alignSelf: "center",
+																	background: "none",
+																	border: "none",
+																}}
+																className="d-flex align-items-center justify-content-center"
+															>
+																<FontAwesomeIcon
+																	icon={faX}
+																	style={{ fontSize: 10, color: "red" }}
+																></FontAwesomeIcon>
+															</Button>
+															<UserCounterWithIncrementAndDecrement
+																username={userdata.username}
+																count={userdata.count}
+																onUpdateCount={(count) => {
+																	const newUserWithCountList = userWithCountList.map(
+																		(current, i) => {
+																			if (index === i)
+																				return { ...current, count: count };
+																			return current;
+																		}
+																	);
+
+																	setUserWithCountList(newUserWithCountList);
+																	sendUserWithCountList(newUserWithCountList);
+																}}
+															/>
+														</div>
+													);
+												})
+											: null}
 										<Button
 											variant="success"
-											className="add-quiz"
 											style={{ marginRight: "1rem" }}
 											onClick={async () => {
 												const result = await askUserTextInput({
@@ -417,12 +439,23 @@ export default function ControlView() {
 												});
 
 												if (!result.isConfirmed) return;
-
 												const value = result.value;
+												if (typeof value !== "string" || !value.trim().length) return;
+												if (!userWithCountList) {
+													await showErrorMessageToUser({
+														message:
+															"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
+													});
+													return;
+												}
 
-												setUserWithCountList((prev) => {
-													return [...prev, { count: 0, username: value }];
-												});
+												let newUserWithCountList = [
+													...userWithCountList,
+													{ count: 0, username: value },
+												];
+
+												setUserWithCountList(newUserWithCountList);
+												sendUserWithCountList(newUserWithCountList);
 											}}
 										>
 											Benutzer hinzufügen

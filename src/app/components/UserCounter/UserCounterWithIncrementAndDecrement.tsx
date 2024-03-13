@@ -1,29 +1,42 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styles from "./userCounterWithIncrementAndDecrement.module.scss";
 import { Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 
+type OnUpdateCount = (count: number) => void;
+
 export default function UserCounterWithIncrementAndDecrement({
 	username,
 	count: initialCount,
+	onUpdateCount,
 }: {
 	username: string;
 	count: number;
+	onUpdateCount?: OnUpdateCount;
 }) {
 	const [count, setCount] = useState<number>(initialCount);
 
+	useEffect(() => {
+		setCount(initialCount);
+	}, [initialCount]);
+
 	const currentCounterIncrement = useCallback(() => {
-		setCount((prev) => prev + 1);
-	}, []);
+		const newCount = count + 1;
+		setCount(newCount);
+		onUpdateCount ? onUpdateCount(newCount) : undefined;
+	}, [count, onUpdateCount]);
 
 	const currentCounterDecrement = useCallback(() => {
-		setCount((prev) => prev - 1);
-	}, []);
+		const newCount = count - 1;
+		setCount(newCount);
+		onUpdateCount ? onUpdateCount(newCount) : undefined;
+	}, [count, onUpdateCount]);
 
 	const currentCounterReset = useCallback(() => {
 		setCount(0);
-	}, []);
+		onUpdateCount ? onUpdateCount(0) : undefined;
+	}, [onUpdateCount]);
 
 	return (
 		<>

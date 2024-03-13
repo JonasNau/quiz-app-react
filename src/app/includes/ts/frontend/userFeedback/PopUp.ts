@@ -103,6 +103,7 @@ export async function askUserTextInput({
 	return await Swal.fire({
 		input: "text",
 		cancelButtonText: "Abbrechen",
+		showCancelButton: true,
 		confirmButtonText: "OK",
 		title: title,
 		text: message,

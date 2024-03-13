@@ -12,6 +12,7 @@ import { validateObjectWithJoiType } from "@/app/includes/ts/backend/validation/
 import { QuizDataSchema, QuizPackageSchema } from "@/schemas/joi/QuizSchemas";
 import { error } from "console";
 import { QuestionEntry, QuizPackage } from "@/interfaces/joi/QuizSchemas";
+import { UserWithCount, UserWithCountList } from "@/interfaces/user-counter";
 
 const port = GLOBAL_APPLICATION_CONFIG.PORT;
 const isDev = GLOBAL_APPLICATION_CONFIG.MODE === ApplicationMode.DEV;
@@ -23,6 +24,7 @@ let quizPackage: QuizPackage | null = null;
 let currentQuestionNumber = 0;
 let showSolutions = false;
 let currentCounterValue = 0;
+let userWithCountList: UserWithCountList = [];
 
 const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
@@ -80,6 +82,16 @@ app.prepare().then(() => {
 				.emit(ESocketEventNames.SEND_QUESTION_NUMBER, questionNumber);
 		};
 
+		const sendUpdateUserWithCountList = (userWithCountList: UserWithCountList) => {
+			socket
+				.in(ERoomNames.BEAMER)
+				.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
+
+			socket
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
+		};
+
 		const sendUpdateQuizData = (quizData: QuizPackage) => {
 			socket
 				.in(ERoomNames.BEAMER)
@@ -134,6 +146,14 @@ app.prepare().then(() => {
 			sendUpdateCurrentCounterValue(currentCounterValue);
 		});
 
+		socket.on(
+			ESocketEventNames.SEND_USER_WITH_COUNT_LIST,
+			(updatedUserWithCountList: UserWithCountList) => {
+				userWithCountList = updatedUserWithCountList;
+				sendUpdateUserWithCountList(userWithCountList);
+			}
+		);
+
 		socket.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (newShowSolutions: boolean) => {
 			if (!quizPackage) {
 				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
@@ -150,6 +170,9 @@ app.prepare().then(() => {
 
 		socket.on(ESocketEventNames.GET_COUNTER_VALUE, () => {
 			socket.emit(ESocketEventNames.SEND_COUNTER_VALUE, currentCounterValue);
+		});
+		socket.on(ESocketEventNames.GET_USER_WITH_COUNT_LIST, () => {
+			socket.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
 		});
 	});
 
