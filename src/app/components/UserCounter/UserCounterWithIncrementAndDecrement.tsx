@@ -5,21 +5,29 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 type OnUpdateCount = (count: number) => void;
+type OnUpdateUsernameEvent = () => void;
 
 export default function UserCounterWithIncrementAndDecrement({
-	username,
+	username: initialUsername,
 	count: initialCount,
 	onUpdateCount,
+	onUpdateUsernameEvent,
 }: {
 	username: string;
 	count: number;
 	onUpdateCount?: OnUpdateCount;
+	onUpdateUsernameEvent?: OnUpdateUsernameEvent;
 }) {
 	const [count, setCount] = useState<number>(initialCount);
+	const [username, setUsername] = useState<string>(initialUsername);
 
 	useEffect(() => {
 		setCount(initialCount);
 	}, [initialCount]);
+
+	useEffect(() => {
+		setUsername(initialUsername);
+	}, [initialUsername]);
 
 	const currentCounterIncrement = useCallback(() => {
 		const newCount = count + 1;
@@ -56,7 +64,11 @@ export default function UserCounterWithIncrementAndDecrement({
 				>
 					<FontAwesomeIcon icon={faPlus} style={{ fontSize: 15, color: "black" }} />
 				</Button>
-				<span className="username" style={{ fontWeight: "bold" }}>
+				<span
+					className="username"
+					style={{ fontWeight: "bold" }}
+					onDoubleClick={onUpdateUsernameEvent}
+				>
 					{username}
 				</span>
 				:{" "}

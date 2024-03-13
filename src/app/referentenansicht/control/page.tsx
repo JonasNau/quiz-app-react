@@ -43,6 +43,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import UserCounterWithIncrementAndDecrement from "@/app/components/UserCounter/UserCounterWithIncrementAndDecrement";
 import { UserWithCountList } from "@/interfaces/user-counter";
+import { ScoreMode } from "@/interfaces/joi/scoreMode";
 
 export default function ControlView() {
 	const router = useRouter();
@@ -55,6 +56,7 @@ export default function ControlView() {
 	const [userWithCountList, setUserWithCountList] = useState<UserWithCountList | null>(
 		null
 	);
+	const [scoreMode, setScoreMode] = useState<ScoreMode | null>(null);
 
 	const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
@@ -66,6 +68,7 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
 		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
 		socketIOClient.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
+		socketIOClient.emit(ESocketEventNames.GET_SCORE_MODE);
 
 		//Fetch quizData
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
@@ -111,6 +114,10 @@ export default function ControlView() {
 
 		socketIOClient.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
 			setCurrentCounterValue(number);
+		});
+
+		socketIOClient.on(ESocketEventNames.SEND_SCORE_MODE, (scoreMode: ScoreMode) => {
+			setScoreMode(scoreMode);
 		});
 
 		socketIOClient.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (showSolutions: boolean) => {
@@ -209,6 +216,17 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
 	};
 
+	const sendScoreMode = (scoreMode: ScoreMode) => {
+		if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
+			showErrorMessageToUser({
+				message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
+			});
+			return;
+		}
+
+		socketIOClient.emit(ESocketEventNames.SEND_SCORE_MODE, scoreMode);
+	};
+
 	const sendShowSolutions = useCallback(
 		(showSolutions: boolean) => {
 			if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
@@ -268,13 +286,28 @@ export default function ControlView() {
 										<b>{getMaxQuestions()}</b>
 									</div>
 									<Form.Switch
-										className="showSolutionsPreview"
+										className="controllerSwitch"
 										label="Lösung in der Vorschau anzeigen:"
 										checked={showSolutionsInPreview}
 										onChange={(event: ChangeEvent<HTMLInputElement>) => {
 											let isChecked = event.target.checked;
 											setShowSolutionsInPreview(isChecked);
 										}}
+									/>
+									<Form.Switch
+										className="controllerSwitch"
+										label={`Punkte Modus (${
+											scoreMode === ScoreMode.GLOBAL ? "global" : "Benutzer"
+										}):`}
+										checked={scoreMode === ScoreMode.USER}
+										onChange={(event: ChangeEvent<HTMLInputElement>) => {
+											let isChecked = event.target.checked;
+											let newScoreMode = isChecked ? ScoreMode.USER : ScoreMode.GLOBAL;
+											console.log(newScoreMode);
+											setScoreMode(newScoreMode);
+											sendScoreMode(newScoreMode);
+										}}
+										disabled={scoreMode === null}
 									/>
 								</Col>
 								<Col className="col-12 col-md-6 col-xl-12 d-flex flex-column align-items-center">
@@ -347,121 +380,168 @@ export default function ControlView() {
 											)}
 										</Button>
 									</section>
-									<section className="btn-counter">
-										<div className="text-center" style={{ fontWeight: "bold" }}>
-											Punkte:
-										</div>
-										<div className="number" onDoubleClick={() => currentCounterReset()}>
-											{currentCounterValue}
-										</div>
-
-										<Button
-											onClick={() => currentCounterDecrement()}
-											style={{ backgroundColor: "red" }}
-										>
+									{scoreMode === ScoreMode.GLOBAL ? (
+										<>
 											{" "}
-											<FontAwesomeIcon
-												icon={faMinus}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</Button>
-										<Button
-											onClick={() => currentCounterIncrement()}
-											style={{ backgroundColor: "green" }}
-										>
-											<FontAwesomeIcon
-												icon={faPlus}
-												style={{ fontSize: 30, color: "black" }}
-											/>
-										</Button>
-									</section>
-									<section className="user-counters">
-										<div className="text-center" style={{ fontWeight: "bold" }}>
-											Benutzer-Punkte:
-										</div>
-										{userWithCountList && userWithCountList.length
-											? userWithCountList.map((userdata, index) => {
-													return (
-														<div key={index} className="d-flex mb-1">
-															<Button
-																onClick={() => {
-																	const newUserWithCountList = userWithCountList.filter(
-																		(current, i) => {
-																			if (i === index) return false;
-																			return true;
-																		}
-																	);
+											<section className="btn-counter">
+												<div className="text-center" style={{ fontWeight: "bold" }}>
+													Punkte:
+												</div>
+												<div
+													className="number"
+													onDoubleClick={() => currentCounterReset()}
+												>
+													{currentCounterValue}
+												</div>
 
-																	setUserWithCountList(newUserWithCountList);
-																	sendUserWithCountList(newUserWithCountList);
-																}}
-																style={{
-																	padding: 5,
-																	height: "30px",
-																	alignSelf: "center",
-																	background: "none",
-																	border: "none",
-																}}
-																className="d-flex align-items-center justify-content-center"
-															>
-																<FontAwesomeIcon
-																	icon={faX}
-																	style={{ fontSize: 10, color: "red" }}
-																></FontAwesomeIcon>
-															</Button>
-															<UserCounterWithIncrementAndDecrement
-																username={userdata.username}
-																count={userdata.count}
-																onUpdateCount={(count) => {
-																	const newUserWithCountList = userWithCountList.map(
-																		(current, i) => {
-																			if (index === i)
-																				return { ...current, count: count };
-																			return current;
-																		}
-																	);
+												<Button
+													onClick={() => currentCounterDecrement()}
+													style={{ backgroundColor: "red" }}
+												>
+													{" "}
+													<FontAwesomeIcon
+														icon={faMinus}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</Button>
+												<Button
+													onClick={() => currentCounterIncrement()}
+													style={{ backgroundColor: "green" }}
+												>
+													<FontAwesomeIcon
+														icon={faPlus}
+														style={{ fontSize: 30, color: "black" }}
+													/>
+												</Button>
+											</section>
+										</>
+									) : (
+										<>
+											{" "}
+											<section className="user-counters">
+												<div className="text-center" style={{ fontWeight: "bold" }}>
+													Benutzer-Punkte:
+												</div>
+												{userWithCountList && userWithCountList.length
+													? userWithCountList.map((userdata, index) => {
+															return (
+																<div key={index} className="d-flex mb-1">
+																	<Button
+																		onClick={() => {
+																			const newUserWithCountList =
+																				userWithCountList.filter((current, i) => {
+																					if (i === index) return false;
+																					return true;
+																				});
 
-																	setUserWithCountList(newUserWithCountList);
-																	sendUserWithCountList(newUserWithCountList);
-																}}
-															/>
-														</div>
-													);
-												})
-											: null}
-										<Button
-											variant="success"
-											style={{ marginRight: "1rem" }}
-											onClick={async () => {
-												const result = await askUserTextInput({
-													message: "Wie soll der Name des Benutzers sein?",
-													title: "Name eingeben",
-												});
+																			setUserWithCountList(newUserWithCountList);
+																			sendUserWithCountList(newUserWithCountList);
+																		}}
+																		style={{
+																			padding: 5,
+																			height: "30px",
+																			alignSelf: "center",
+																			background: "none",
+																			border: "none",
+																		}}
+																		className="d-flex align-items-center justify-content-center"
+																	>
+																		<FontAwesomeIcon
+																			icon={faX}
+																			style={{ fontSize: 10, color: "red" }}
+																		></FontAwesomeIcon>
+																	</Button>
+																	<UserCounterWithIncrementAndDecrement
+																		username={userdata.username}
+																		count={userdata.count}
+																		onUpdateCount={(count) => {
+																			const newUserWithCountList = userWithCountList.map(
+																				(current, i) => {
+																					if (index === i)
+																						return { ...current, count: count };
+																					return current;
+																				}
+																			);
 
-												if (!result.isConfirmed) return;
-												const value = result.value;
-												if (typeof value !== "string" || !value.trim().length) return;
-												if (!userWithCountList) {
-													await showErrorMessageToUser({
-														message:
-															"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
-													});
-													return;
-												}
+																			setUserWithCountList(newUserWithCountList);
+																			sendUserWithCountList(newUserWithCountList);
+																		}}
+																		onUpdateUsernameEvent={async () => {
+																			const result = await askUserTextInput({
+																				message: "Wie soll der Name des Benutzers sein?",
+																				title: "Name eingeben",
+																				inputValue: userdata.username,
+																			});
 
-												let newUserWithCountList = [
-													...userWithCountList,
-													{ count: 0, username: value },
-												];
+																			if (!result.isConfirmed) return;
+																			const value = result.value;
+																			if (
+																				typeof value !== "string" ||
+																				!value.trim().length
+																			)
+																				return;
+																			if (!userWithCountList) {
+																				await showErrorMessageToUser({
+																					message:
+																						"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
+																				});
+																				return;
+																			}
 
-												setUserWithCountList(newUserWithCountList);
-												sendUserWithCountList(newUserWithCountList);
-											}}
-										>
-											Benutzer hinzufügen
-											<FontAwesomeIcon icon={faPlus} style={{ marginLeft: "0.25rem" }} />
-										</Button>
-									</section>
+																			let newUserWithCountList = userWithCountList.map(
+																				(current, i) => {
+																					if (index === i)
+																						return { ...current, username: value };
+																					return current;
+																				}
+																			);
+
+																			setUserWithCountList(newUserWithCountList);
+																			sendUserWithCountList(newUserWithCountList);
+																		}}
+																	/>
+																</div>
+															);
+														})
+													: null}
+												<Button
+													variant="success"
+													style={{ marginRight: "1rem" }}
+													onClick={async () => {
+														const result = await askUserTextInput({
+															message: "Wie soll der Name des Benutzers sein?",
+															title: "Name eingeben",
+														});
+
+														if (!result.isConfirmed) return;
+														const value = result.value;
+														if (typeof value !== "string" || !value.trim().length) return;
+														if (!userWithCountList) {
+															await showErrorMessageToUser({
+																message:
+																	"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
+															});
+															return;
+														}
+
+														let newUserWithCountList = [
+															...userWithCountList,
+															{ count: 0, username: value },
+														];
+
+														setUserWithCountList(newUserWithCountList);
+														sendUserWithCountList(newUserWithCountList);
+													}}
+												>
+													Benutzer hinzufügen
+													<FontAwesomeIcon
+														icon={faPlus}
+														style={{ marginLeft: "0.25rem" }}
+													/>
+												</Button>
+											</section>
+										</>
+									)}
 								</Col>
 							</Row>
 						</Container>

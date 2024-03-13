@@ -13,6 +13,7 @@ import { QuizDataSchema, QuizPackageSchema } from "@/schemas/joi/QuizSchemas";
 import { error } from "console";
 import { QuestionEntry, QuizPackage } from "@/interfaces/joi/QuizSchemas";
 import { UserWithCount, UserWithCountList } from "@/interfaces/user-counter";
+import { ScoreMode } from "@/interfaces/joi/scoreMode";
 
 const port = GLOBAL_APPLICATION_CONFIG.PORT;
 const isDev = GLOBAL_APPLICATION_CONFIG.MODE === ApplicationMode.DEV;
@@ -25,6 +26,7 @@ let currentQuestionNumber = 0;
 let showSolutions = false;
 let currentCounterValue = 0;
 let userWithCountList: UserWithCountList = [];
+let scoreMode: ScoreMode = ScoreMode.GLOBAL;
 
 const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
@@ -92,6 +94,14 @@ app.prepare().then(() => {
 				.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
 		};
 
+		const sendUpdateScoreMode = (scoreMode: ScoreMode) => {
+			socket.in(ERoomNames.BEAMER).emit(ESocketEventNames.SEND_SCORE_MODE, scoreMode);
+
+			socket
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_SCORE_MODE, scoreMode);
+		};
+
 		const sendUpdateQuizData = (quizData: QuizPackage) => {
 			socket
 				.in(ERoomNames.BEAMER)
@@ -146,6 +156,11 @@ app.prepare().then(() => {
 			sendUpdateCurrentCounterValue(currentCounterValue);
 		});
 
+		socket.on(ESocketEventNames.SEND_SCORE_MODE, (newScoreMode: ScoreMode) => {
+			scoreMode = newScoreMode;
+			sendUpdateScoreMode(scoreMode);
+		});
+
 		socket.on(
 			ESocketEventNames.SEND_USER_WITH_COUNT_LIST,
 			(updatedUserWithCountList: UserWithCountList) => {
@@ -173,6 +188,10 @@ app.prepare().then(() => {
 		});
 		socket.on(ESocketEventNames.GET_USER_WITH_COUNT_LIST, () => {
 			socket.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
+		});
+
+		socket.on(ESocketEventNames.GET_SCORE_MODE, () => {
+			socket.emit(ESocketEventNames.SEND_SCORE_MODE, scoreMode);
 		});
 	});
 

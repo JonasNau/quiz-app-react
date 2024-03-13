@@ -96,9 +96,11 @@ export async function showErrorMessageAndAskUser({
 export async function askUserTextInput({
 	message,
 	title = "Text eingeben",
+	inputValue,
 }: {
 	message: string;
 	title?: string;
+	inputValue?: string;
 }) {
 	return await Swal.fire({
 		input: "text",
@@ -108,5 +110,6 @@ export async function askUserTextInput({
 		title: title,
 		text: message,
 		icon: "question",
+		inputValue: inputValue,
 	});
 }

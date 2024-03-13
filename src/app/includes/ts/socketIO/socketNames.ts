@@ -14,6 +14,8 @@ export enum ESocketEventNames {
 	SEND_SHOW_SOLUTIONS = "send_show_answers",
 	GET_USER_WITH_COUNT_LIST = "get_user_with_count_list",
 	SEND_USER_WITH_COUNT_LIST = "send_user_with_count_list",
+	GET_SCORE_MODE = "get_score_mode",
+	SEND_SCORE_MODE = "send_score_mode",
 }
 
 export enum ERoomNames {
