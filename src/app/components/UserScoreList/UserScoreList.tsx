@@ -23,8 +23,18 @@ export default function UserScoreList({
 		if (!sortedUserWithCountList.length) return [];
 		let rank = 1;
 		let lastCount = sortedUserWithCountList[0].count;
-		const scoreList: ScoreList = sortedUserWithCountList.map((user) => {
-			if (lastCount > user.count) rank++;
+		let sameRankCount = 0; // Track how many users have the same rank
+		const scoreList: ScoreList = sortedUserWithCountList.map((user, index) => {
+			if (lastCount > user.count) {
+				// Decrease rank only if the count is less than the last count
+				rank += sameRankCount + 1; // Increment rank by the count of users with the same rank plus 1
+				sameRankCount = 0; // Reset sameRankCount
+			} else if (lastCount === user.count && index !== 0) {
+				// If count is same as last count and not the first user
+				sameRankCount++; // Increment sameRankCount
+			} else {
+				sameRankCount = 0; // Reset sameRankCount for new rank
+			}
 			const newUser = { ...user, rank };
 
 			lastCount = user.count;

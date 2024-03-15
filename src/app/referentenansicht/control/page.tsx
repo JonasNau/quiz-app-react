@@ -33,17 +33,22 @@ import {
 	faEye,
 	faEyeSlash,
 	faMinus,
+	faPencil,
 	faPlus,
 	faRefresh,
 	faRotateBack,
 	faRotateForward,
 	faRotateLeft,
 	faRotateRight,
+	faTrashCan,
 	faX,
 } from "@fortawesome/free-solid-svg-icons";
 import UserCounterWithIncrementAndDecrement from "@/app/components/UserCounter/UserCounterWithIncrementAndDecrement";
 import { UserWithCountList } from "@/interfaces/user-counter";
 import { ScoreMode } from "@/interfaces/scoreMode";
+import withReactContent from "sweetalert2-react-content";
+import Swal from "sweetalert2";
+import UserEditor from "@/app/components/UserEditor/UserEditor";
 
 export default function ControlView() {
 	const router = useRouter();
@@ -58,6 +63,9 @@ export default function ControlView() {
 		null
 	);
 	const [scoreMode, setScoreMode] = useState<ScoreMode | null>(null);
+	const [userEditModalShouldOpen, setUserEditModalShouldOpen] = useState<boolean>(false);
+	const [userEditModalIsOpen, setUserEditModalIsOpen] = useState<boolean>(false);
+	const [usernameEditModalIsOpen, setUsernameEditModalIsOpen] = useState<boolean>(false);
 
 	const getMaxQuestions = () => (quizPackage ? quizPackage.quizData.length : 0);
 
@@ -213,16 +221,19 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.SEND_COUNTER_VALUE, number);
 	};
 
-	const sendUserWithCountList = (userWithCountList: UserWithCountList) => {
-		if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
-			showErrorMessageToUser({
-				message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
-			});
-			return;
-		}
+	const sendUserWithCountList = useCallback(
+		(userWithCountList: UserWithCountList) => {
+			if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
+				showErrorMessageToUser({
+					message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
+				});
+				return;
+			}
 
-		socketIOClient.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
-	};
+			socketIOClient.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
+		},
+		[socketIOClient]
+	);
 
 	const sendScoreMode = (scoreMode: ScoreMode) => {
 		if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
@@ -299,6 +310,50 @@ export default function ControlView() {
 		setCurrentCounterValue(newValue);
 		sendCurrentCounterValue(newValue);
 	};
+
+	const openUserEditModal = useCallback(() => {
+		setTimeout(() => {
+			if (!userWithCountList) {
+				showErrorMessageToUser({
+					message:
+						"Benutzer können nicht bearbeitet werden, da der Server keine Liste an Benutzern zurückgegeben hat.",
+				});
+				return;
+			}
+			setUserEditModalIsOpen(true);
+			withReactContent(Swal).fire({
+				title: "Benutzer bearbeiten",
+				showCloseButton: true,
+				html: (
+					<>
+						<UserEditor
+							userWithCountList={userWithCountList}
+							onUpdateUserWithCountList={(userWithCountList: UserWithCountList) => {
+								setUserWithCountList(userWithCountList);
+								sendUserWithCountList(userWithCountList);
+							}}
+							onUsernameModalOpen={() => setUserEditModalIsOpen(true)}
+							onUsernameModalClose={() => setUserEditModalIsOpen(false)}
+						/>
+					</>
+				),
+				didClose() {
+					setUserEditModalShouldOpen(false);
+				},
+				didDestroy() {
+					setUserEditModalIsOpen(false);
+				},
+				grow: "fullscreen",
+			});
+		}, 0);
+	}, [sendUserWithCountList, userWithCountList]);
+
+	useEffect(() => {
+		if (!userEditModalShouldOpen) return;
+		if (usernameEditModalIsOpen) return;
+		if (userEditModalShouldOpen && !userEditModalIsOpen) openUserEditModal();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [userEditModalShouldOpen, userEditModalIsOpen, usernameEditModalIsOpen]);
 
 	return (
 		<>
@@ -499,31 +554,6 @@ export default function ControlView() {
 													? userWithCountList.map((userdata, index) => {
 															return (
 																<div key={index} className="d-flex mb-1">
-																	<Button
-																		onClick={() => {
-																			const newUserWithCountList =
-																				userWithCountList.filter((current, i) => {
-																					if (i === index) return false;
-																					return true;
-																				});
-
-																			setUserWithCountList(newUserWithCountList);
-																			sendUserWithCountList(newUserWithCountList);
-																		}}
-																		style={{
-																			padding: 5,
-																			height: "30px",
-																			alignSelf: "center",
-																			background: "none",
-																			border: "none",
-																		}}
-																		className="d-flex align-items-center justify-content-center"
-																	>
-																		<FontAwesomeIcon
-																			icon={faX}
-																			style={{ fontSize: 10, color: "red" }}
-																		></FontAwesomeIcon>
-																	</Button>
 																	<UserCounterWithIncrementAndDecrement
 																		username={userdata.username}
 																		count={userdata.count}
@@ -539,78 +569,19 @@ export default function ControlView() {
 																			setUserWithCountList(newUserWithCountList);
 																			sendUserWithCountList(newUserWithCountList);
 																		}}
-																		onUpdateUsernameEvent={async () => {
-																			const result = await askUserTextInput({
-																				message: "Wie soll der Name des Benutzers sein?",
-																				title: "Name eingeben",
-																				inputValue: userdata.username,
-																			});
-
-																			if (!result.isConfirmed) return;
-																			const value = result.value;
-																			if (
-																				typeof value !== "string" ||
-																				!value.trim().length
-																			)
-																				return;
-																			if (!userWithCountList) {
-																				await showErrorMessageToUser({
-																					message:
-																						"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
-																				});
-																				return;
-																			}
-
-																			let newUserWithCountList = userWithCountList.map(
-																				(current, i) => {
-																					if (index === i)
-																						return { ...current, username: value };
-																					return current;
-																				}
-																			);
-
-																			setUserWithCountList(newUserWithCountList);
-																			sendUserWithCountList(newUserWithCountList);
-																		}}
 																	/>
 																</div>
 															);
 														})
 													: null}
+
 												<Button
 													variant="success"
-													style={{ marginRight: "1rem" }}
 													onClick={async () => {
-														const result = await askUserTextInput({
-															message: "Wie soll der Name des Benutzers sein?",
-															title: "Name eingeben",
-														});
-
-														if (!result.isConfirmed) return;
-														const value = result.value;
-														if (typeof value !== "string" || !value.trim().length) return;
-														if (!userWithCountList) {
-															await showErrorMessageToUser({
-																message:
-																	"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
-															});
-															return;
-														}
-
-														let newUserWithCountList = [
-															...userWithCountList,
-															{ count: 0, username: value },
-														];
-
-														setUserWithCountList(newUserWithCountList);
-														sendUserWithCountList(newUserWithCountList);
+														setUserEditModalShouldOpen(true);
 													}}
 												>
-													Benutzer hinzufügen
-													<FontAwesomeIcon
-														icon={faPlus}
-														style={{ marginLeft: "0.25rem" }}
-													/>
+													Benutzer bearbeiten <FontAwesomeIcon icon={faPencil} />
 												</Button>
 											</section>
 										</>

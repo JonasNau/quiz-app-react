@@ -111,9 +111,9 @@ export default function BeamerAnsicht() {
 	return (
 		<>
 			<Container className={styles.componentContainer}>
-				<h1 className="text-center">Ergebnisse</h1>
 				{showScoreDisplay ? (
 					<>
+						<h1 className="text-center">Ergebnisse</h1>
 						{scoreMode !== null && scoreMode === ScoreMode.GLOBAL ? (
 							<>
 								{" "}

@@ -60,7 +60,7 @@ export default function UserCounterWithIncrementAndDecrement({
 				<Button
 					onClick={() => currentCounterIncrement()}
 					style={{ backgroundColor: "green" }}
-					className="m-1"
+					className="me-2 ms-1"
 				>
 					<FontAwesomeIcon icon={faPlus} style={{ fontSize: 15, color: "black" }} />
 				</Button>
