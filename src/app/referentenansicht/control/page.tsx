@@ -43,13 +43,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import UserCounterWithIncrementAndDecrement from "@/app/components/UserCounter/UserCounterWithIncrementAndDecrement";
 import { UserWithCountList } from "@/interfaces/user-counter";
-import { ScoreMode } from "@/interfaces/joi/scoreMode";
+import { ScoreMode } from "@/interfaces/scoreMode";
 
 export default function ControlView() {
 	const router = useRouter();
 	const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(0);
 	const [currentCounterValue, setCurrentCounterValue] = useState<number>(0);
 	const [showSolutions, setShowSolutions] = useState<boolean>(false);
+	const [showScoreDisplay, setShowScoreDisplay] = useState<boolean>(false);
 	const [showSolutionsInPreview, setShowSolutionsInPreview] = useState<boolean>(false);
 	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
@@ -69,8 +70,7 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
 		socketIOClient.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
 		socketIOClient.emit(ESocketEventNames.GET_SCORE_MODE);
-
-		//Fetch quizData
+		socketIOClient.emit(ESocketEventNames.GET_SHOW_SCORE_DISPLAY);
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
@@ -124,6 +124,13 @@ export default function ControlView() {
 			setShowSolutions(showSolutions);
 		});
 
+		socketIOClient.on(
+			ESocketEventNames.SEND_SHOW_SCORE_DISPLAY,
+			(showScoreDisplay: boolean) => {
+				setShowScoreDisplay(showScoreDisplay);
+			}
+		);
+
 		return () => {
 			socketIOClient.close();
 		};
@@ -151,6 +158,7 @@ export default function ControlView() {
 			return;
 		}
 		const nextQuestionNumber = currentQuestionNumber + 1;
+		setShowSolutions(false);
 		sendShowSolutions(false);
 		setCurrentQuestionNumber(nextQuestionNumber);
 		sendQuestionNumber(nextQuestionNumber);
@@ -241,6 +249,20 @@ export default function ControlView() {
 		[socketIOClient]
 	);
 
+	const sendShowScoreDisplay = useCallback(
+		(showScoreDisplay: boolean) => {
+			if (!socketIOClientIsDefinedAndConnected(socketIOClient)) {
+				showErrorMessageToUser({
+					message: DefaultErrorMessages.SERVER_NOT_CONNECTED,
+				});
+				return;
+			}
+
+			socketIOClient.emit(ESocketEventNames.SEND_SHOW_SCORE_DISPLAY, showScoreDisplay);
+		},
+		[socketIOClient]
+	);
+
 	const handleShowSolutions = useCallback(
 		(event: SyntheticEvent<HTMLButtonElement>) => {
 			const newShowSolutions = !showSolutions;
@@ -248,6 +270,16 @@ export default function ControlView() {
 			sendShowSolutions(newShowSolutions);
 		},
 		[sendShowSolutions, showSolutions]
+	);
+
+	const handleShowScoreDisplay = useCallback(
+		(event: SyntheticEvent<HTMLButtonElement>) => {
+			const newShowScoreDisplay = !showScoreDisplay;
+
+			setShowScoreDisplay(newShowScoreDisplay);
+			sendShowScoreDisplay(newShowScoreDisplay);
+		},
+		[sendShowScoreDisplay, showScoreDisplay]
 	);
 
 	const currentCounterIncrement = () => {
@@ -311,36 +343,77 @@ export default function ControlView() {
 									/>
 								</Col>
 								<Col className="col-12 col-md-6 col-xl-12 d-flex flex-column align-items-center">
-									<b>Lösung {showSolutions ? "verstecken" : "anzeigen"}:</b>
-									<div>
-										{showSolutions ? (
-											<>
-												<Button
-													className="btn-show-solution m-2"
-													onClick={handleShowSolutions}
-													data-show-solutions={showSolutions}
-												>
-													<FontAwesomeIcon
-														icon={faEye}
-														style={{ fontSize: 30, color: "black" }}
-													/>
-												</Button>
-											</>
-										) : (
-											<>
-												<Button
-													className="btn-show-solution m-2"
-													onClick={handleShowSolutions}
-													data-show-solutions={showSolutions}
-												>
-													<FontAwesomeIcon
-														icon={faEyeSlash}
-														style={{ fontSize: 30, color: "black" }}
-													/>
-												</Button>
-											</>
-										)}
-									</div>
+									<Row>
+										<Col className="d-flex text-center flex-column justify-content-center align-items-center">
+											<b className="flex-grow-1 d-flex justify-content-center align-items-center">
+												<div>Lösung {showSolutions ? "verstecken" : "anzeigen"}:</div>
+											</b>
+											<div>
+												{showSolutions ? (
+													<>
+														<Button
+															className="btn-show-solution m-2"
+															onClick={handleShowSolutions}
+															data-show-solutions={showSolutions}
+														>
+															<FontAwesomeIcon
+																icon={faEye}
+																style={{ fontSize: 30, color: "black" }}
+															/>
+														</Button>
+													</>
+												) : (
+													<>
+														<Button
+															className="btn-show-solution m-2"
+															onClick={handleShowSolutions}
+															data-show-solutions={showSolutions}
+														>
+															<FontAwesomeIcon
+																icon={faEyeSlash}
+																style={{ fontSize: 30, color: "black" }}
+															/>
+														</Button>
+													</>
+												)}
+											</div>
+										</Col>
+										<Col className="d-flex text-center flex-column justify-content-center align-items-center">
+											<b className="flex-grow-1 d-flex justify-content-center align-items-center">
+												<div>
+													Ergebnis {showScoreDisplay ? "verstecken" : "anzeigen"}:
+												</div>
+											</b>
+
+											{showScoreDisplay ? (
+												<>
+													<Button
+														className="btn-show-score-display m-2"
+														onClick={handleShowScoreDisplay}
+														data-show-score-display={showScoreDisplay}
+													>
+														<FontAwesomeIcon
+															icon={faEye}
+															style={{ fontSize: 30, color: "black" }}
+														/>
+													</Button>
+												</>
+											) : (
+												<>
+													<Button
+														className="btn-show-score-display m-2"
+														onClick={handleShowScoreDisplay}
+														data-show-score-display={showScoreDisplay}
+													>
+														<FontAwesomeIcon
+															icon={faEyeSlash}
+															style={{ fontSize: 30, color: "black" }}
+														/>
+													</Button>
+												</>
+											)}
+										</Col>
+									</Row>
 
 									<section className="btn-prev-next">
 										<Button className="btn-previous m-2" onClick={handlePreviousQuestion}>

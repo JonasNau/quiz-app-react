@@ -11,11 +11,14 @@ export enum ESocketEventNames {
 	GET_COUNTER_VALUE = "get_counter_value",
 	SEND_QUESTION_NUMBER = "send_question_number",
 	GET_QUESTION_NUMBER = "get_question_number",
-	SEND_SHOW_SOLUTIONS = "send_show_answers",
+	SEND_SHOW_SOLUTIONS = "send_show_solutions",
+	GET_SHOW_SOLUTIONS = "get_show_solutions",
 	GET_USER_WITH_COUNT_LIST = "get_user_with_count_list",
 	SEND_USER_WITH_COUNT_LIST = "send_user_with_count_list",
 	GET_SCORE_MODE = "get_score_mode",
 	SEND_SCORE_MODE = "send_score_mode",
+	SEND_SHOW_SCORE_DISPLAY = "send_show_score_display",
+	GET_SHOW_SCORE_DISPLAY = "get_show_score_display",
 }
 
 export enum ERoomNames {

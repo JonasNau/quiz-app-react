@@ -13,7 +13,7 @@ import { QuizDataSchema, QuizPackageSchema } from "@/schemas/joi/QuizSchemas";
 import { error } from "console";
 import { QuestionEntry, QuizPackage } from "@/interfaces/joi/QuizSchemas";
 import { UserWithCount, UserWithCountList } from "@/interfaces/user-counter";
-import { ScoreMode } from "@/interfaces/joi/scoreMode";
+import { ScoreMode } from "@/interfaces/scoreMode";
 
 const port = GLOBAL_APPLICATION_CONFIG.PORT;
 const isDev = GLOBAL_APPLICATION_CONFIG.MODE === ApplicationMode.DEV;
@@ -24,6 +24,7 @@ const ServerLogger = ServerLoggerProvider.getLogger();
 let quizPackage: QuizPackage | null = null;
 let currentQuestionNumber = 0;
 let showSolutions = false;
+let showScoreDisplay = false;
 let currentCounterValue = 0;
 let userWithCountList: UserWithCountList = [];
 let scoreMode: ScoreMode = ScoreMode.GLOBAL;
@@ -66,6 +67,16 @@ app.prepare().then(() => {
 				.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, showSolutions);
 		};
 
+		const sendUpdateShowScoreDisplay = (showScoreDisplay: boolean) => {
+			socket
+				.in(ERoomNames.BEAMER)
+				.emit(ESocketEventNames.SEND_SHOW_SCORE_DISPLAY, showScoreDisplay);
+
+			socket
+				.in(ERoomNames.REFERENT_CONTROL)
+				.emit(ESocketEventNames.SEND_SHOW_SCORE_DISPLAY, showScoreDisplay);
+		};
+
 		const sendUpdateCurrentCounterValue = (number: number) => {
 			socket.in(ERoomNames.BEAMER).emit(ESocketEventNames.SEND_COUNTER_VALUE, number);
 
@@ -106,7 +117,7 @@ app.prepare().then(() => {
 			socket
 				.in(ERoomNames.BEAMER)
 				.in(ERoomNames.REFERENT_CONTROL)
-				.emit(ESocketEventNames.SEND_QUIZ_DATA, quizData);
+				.emit(ESocketEventNames.SEND_SCORE_MODE, quizData);
 		};
 
 		socket.on(ESocketEventNames.INIT_QUIZ, (newQuizPackage: unknown) => {
@@ -179,6 +190,14 @@ app.prepare().then(() => {
 			sendUpdateShowSolutions(showSolutions);
 		});
 
+		socket.on(
+			ESocketEventNames.SEND_SHOW_SCORE_DISPLAY,
+			(newShowScoreDisplay: boolean) => {
+				showScoreDisplay = newShowScoreDisplay;
+				sendUpdateShowScoreDisplay(showScoreDisplay);
+			}
+		);
+
 		socket.on(ESocketEventNames.GET_QUESTION_NUMBER, () => {
 			socket.emit(ESocketEventNames.SEND_QUESTION_NUMBER, currentQuestionNumber);
 		});
@@ -192,6 +211,14 @@ app.prepare().then(() => {
 
 		socket.on(ESocketEventNames.GET_SCORE_MODE, () => {
 			socket.emit(ESocketEventNames.SEND_SCORE_MODE, scoreMode);
+		});
+
+		socket.on(ESocketEventNames.GET_SHOW_SOLUTIONS, () => {
+			socket.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, showSolutions);
+		});
+
+		socket.on(ESocketEventNames.GET_SHOW_SCORE_DISPLAY, () => {
+			socket.emit(ESocketEventNames.SEND_SHOW_SCORE_DISPLAY, showScoreDisplay);
 		});
 	});
 

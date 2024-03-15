@@ -7,16 +7,29 @@ import { Socket, io } from "socket.io-client";
 
 import styles from "./beamer-ansicht.module.scss";
 import { ERoomNames, ESocketEventNames } from "../includes/ts/socketIO/socketNames";
+import UserScoreList from "../components/UserScoreList/UserScoreList";
+import { UserWithCountList } from "@/interfaces/user-counter";
+import { ScoreMode } from "@/interfaces/scoreMode";
+import { showErrorMessageToUser } from "../includes/ts/frontend/userFeedback/PopUp";
+import { DefaultErrorMessages } from "../includes/ts/frontend/userFeedback/Messages";
 
 export default function BeamerAnsicht() {
 	const [showSolutions, setShowSolutions] = useState<boolean>(false);
+	const [showScoreDisplay, setShowScoreDisplay] = useState<boolean>(false);
 	const [quizPackage, setQuizPackage] = useState<QuizPackage | null>(null);
 	const [socketIOClient, setSocketIOClient] = useState<Socket | null>(null);
 	const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(0);
+	const [currentCounterValue, setCurrentCounterValue] = useState<number>(0);
+
 	const [waitingMessage, setWatingMessage] = useState<string>(
 		EWaitingMessage.WAITING_FOR_DATA
 	);
-	const [currentCounterValue, setCurrentCounterValue] = useState<number>(0);
+
+	const [userWithCountList, setUserWithCountList] = useState<UserWithCountList | null>(
+		null
+	);
+
+	const [scoreMode, setScoreMode] = useState<ScoreMode | null>(null);
 
 	useEffect(() => {
 		//Create Socket IO Client
@@ -28,6 +41,11 @@ export default function BeamerAnsicht() {
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
 		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
 		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
+		socketIOClient.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
+		socketIOClient.emit(ESocketEventNames.GET_SCORE_MODE);
+		socketIOClient.emit(ESocketEventNames.GET_SHOW_SCORE_DISPLAY);
+		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
+		socketIOClient.emit(ESocketEventNames.GET_SHOW_SOLUTIONS);
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
 			if (errorName === "NO_QUIZ_DATA") {
@@ -53,12 +71,32 @@ export default function BeamerAnsicht() {
 			setCurrentQuestionNumber(number);
 		});
 
+		socketIOClient.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
+			console.log(number);
+			setCurrentCounterValue(number);
+		});
+
 		socketIOClient.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (showSolutions: boolean) => {
 			setShowSolutions(showSolutions);
 		});
 
-		socketIOClient.on(ESocketEventNames.SEND_COUNTER_VALUE, (number: number) => {
-			setCurrentCounterValue(number);
+		socketIOClient.on(
+			ESocketEventNames.SEND_SHOW_SCORE_DISPLAY,
+			(showScoreDisplay: boolean) => {
+				setShowScoreDisplay(showScoreDisplay);
+			}
+		);
+
+		socketIOClient.on(
+			ESocketEventNames.SEND_USER_WITH_COUNT_LIST,
+			(userWithCountList: UserWithCountList) => {
+				setUserWithCountList(userWithCountList);
+			}
+		);
+
+		socketIOClient.on(ESocketEventNames.SEND_SCORE_MODE, (scoreMode: ScoreMode) => {
+			setScoreMode(scoreMode);
+			console.log(scoreMode);
 		});
 	}, []);
 
@@ -73,19 +111,42 @@ export default function BeamerAnsicht() {
 	return (
 		<>
 			<Container className={styles.componentContainer}>
-				<h1 className="text-center">Quiz</h1>
-
-				{quizPackage && quizPackage.quizData.length ? (
-					<div className={styles.quiz}>
-						<QuizReadOnly
-							questionEntry={quizPackage.quizData[currentQuestionNumber]}
-							showSolutions={showSolutions}
-							currentCounterValue={currentCounterValue}
-						/>
-					</div>
+				<h1 className="text-center">Ergebnisse</h1>
+				{showScoreDisplay ? (
+					<>
+						{scoreMode !== null && scoreMode === ScoreMode.GLOBAL ? (
+							<>
+								{" "}
+								<div
+									className={`${styles.wrapper} text-center`}
+									style={{ fontSize: "3rem" }}
+								>
+									Aktuelle Punktzahl: <span>{currentCounterValue}</span>
+								</div>
+							</>
+						) : (
+							<>
+								{" "}
+								<UserScoreList userWithCountList={userWithCountList} />
+							</>
+						)}
+					</>
 				) : (
 					<>
-						<div className={styles.waiting}>{waitingMessage}...</div>
+						<h1 className="text-center">Quiz</h1>
+
+						<div className={styles.wrapper}>
+							{quizPackage && quizPackage.quizData.length ? (
+								<QuizReadOnly
+									questionEntry={quizPackage.quizData[currentQuestionNumber]}
+									showSolutions={showSolutions}
+								/>
+							) : (
+								<>
+									<div className={styles.waiting}>{waitingMessage}...</div>
+								</>
+							)}
+						</div>
 					</>
 				)}
 			</Container>

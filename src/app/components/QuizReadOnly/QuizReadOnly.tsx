@@ -8,11 +8,9 @@ import { Resizable } from "re-resizable";
 export default function QuizReadOnly({
 	questionEntry,
 	showSolutions,
-	currentCounterValue,
 }: {
 	questionEntry: QuestionEntry;
 	showSolutions: boolean;
-	currentCounterValue?: number;
 }) {
 	const [resizableWidth, setResizableWidth] = useState("100%");
 
@@ -22,15 +20,6 @@ export default function QuizReadOnly({
 
 	return (
 		<div className={styles.quizReadOnly}>
-			{currentCounterValue !== undefined && (
-				<div
-					className="number text-center mb-2"
-					style={{ fontWeight: "bold", fontSize: "1.25rem" }}
-				>
-					Punkte: {currentCounterValue}
-				</div>
-			)}
-
 			<h2 className="text-center">Frage</h2>
 			<div className="text-center question">{questionEntry.question}</div>
 

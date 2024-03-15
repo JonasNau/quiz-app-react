@@ -31,6 +31,19 @@
 					background-color: colors.$wrongColor;
 				}
 			}
+
+			.btn-show-score-display {
+				height: 70px;
+				width: 70px;
+				padding: 1rem;
+				border-radius: 100%;
+				&[data-show-score-display="true"] {
+					background-color: colors.$correctColor;
+				}
+				&[data-show-score-display="false"] {
+					background-color: colors.$wrongColor;
+				}
+			}
 			.controllerSwitch {
 				display: flex;
 				flex-direction: column-reverse;

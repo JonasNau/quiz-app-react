@@ -1,0 +1,38 @@
+.userScoreList {
+	display: flex;
+	justify-content: center;
+	:global {
+		.user-score-table {
+			border-collapse: collapse;
+			margin: 25px 0;
+			font-size: 0.9em;
+			font-family: sans-serif;
+			min-width: 400px;
+			box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+			border-radius: 20px;
+			overflow: hidden;
+			font-size: 1.5rem;
+
+			th,
+			td {
+				padding: 12px 15px;
+				background-color: white;
+			}
+
+			thead tr th {
+				background-color: #009879;
+				color: #ffffff;
+				text-align: left;
+			}
+
+			tbody {
+				tr {
+					border-bottom: 1px solid #dddddd;
+					&:nth-of-type(even) {
+						background-color: #0000000c;
+					}
+				}
+			}
+		}
+	}
+}
