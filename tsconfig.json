@@ -35,11 +35,11 @@
 		"emit": false,
 		"transpileOnly": false,
 		"compilerOptions": {
-			"target": "ES2022" /* Use the latest ECMAScript version */,
-			"module": "CommonJS" /* Specify module code generation */,
-			"strict": true /* Enable all strict type-checking options */,
-			"esModuleInterop": true /* Emit additional ES5-compatible code for import/export */,
-			"resolveJsonModule": true /* Include JSON files in the import statement */
+			"target": "ES2022",
+			"module": "CommonJS",
+			"strict": true,
+			"esModuleInterop": true,
+			"resolveJsonModule": true
 		}
 	}
 }

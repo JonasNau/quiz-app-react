@@ -332,8 +332,8 @@ export default function ControlView() {
 								setUserWithCountList(userWithCountList);
 								sendUserWithCountList(userWithCountList);
 							}}
-							onUsernameModalOpen={() => setUserEditModalIsOpen(true)}
-							onUsernameModalClose={() => setUserEditModalIsOpen(false)}
+							onUsernameModalOpen={() => setUsernameEditModalIsOpen(true)}
+							onUsernameModalClose={() => setUsernameEditModalIsOpen(false)}
 						/>
 					</>
 				),
