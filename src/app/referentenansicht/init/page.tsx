@@ -364,7 +364,9 @@ export default function InitQuiz() {
 					</>
 				) : (
 					<>
-						<Alert variant="warning">Die Quiz-JSON ist nicht valide.</Alert>
+						<Alert variant="warning" id="visual-quiz-editor-alert">
+							Die Quiz-JSON ist nicht valide.
+						</Alert>
 					</>
 				)}
 				<h2>Quiz-JSON bearbeiten (erweitert)</h2>

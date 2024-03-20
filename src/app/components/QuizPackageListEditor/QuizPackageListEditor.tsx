@@ -148,7 +148,7 @@ export default function QuizPackageListEditor({
 			<DndProvider backend={HTML5Backend}>
 				{quizPackageList.map((quizEntry, index) => {
 					return (
-						<div key={index}>
+						<div key={index} data-quiz-name={quizEntry.name}>
 							<DraggableListItem
 								type="quizPackage-entry"
 								index={index}
