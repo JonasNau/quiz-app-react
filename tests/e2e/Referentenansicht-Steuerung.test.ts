@@ -2,6 +2,12 @@ import { test, expect } from "@playwright/test";
 import { waitFor } from "@testing-library/react";
 import { describe } from "node:test";
 
+export const ROOT_PATH = "/referentenansicht/control";
+
+test.beforeEach(async ({ page }) => {
+	await page.goto(ROOT_PATH);
+});
+
 describe("Referentenansicht Steuerung", () => {
 	test("link back to start page works", () => {
 		throw new Error("Not implemented");

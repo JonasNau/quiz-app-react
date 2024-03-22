@@ -47,10 +47,16 @@ export default function QuizReadOnly({
 				{questionEntry.answers.map((answer) => {
 					if (showSolutions) {
 						return (
-							<Answer text={answer.text} isCorrect={answer.isCorrect} key={answer.text} />
+							<div data-answer-text={answer.text} key={answer.text}>
+								<Answer text={answer.text} isCorrect={answer.isCorrect} />
+							</div>
 						);
 					}
-					return <Answer text={answer.text} key={answer.text} />;
+					return (
+						<div data-answer-text={answer.text} key={answer.text}>
+							<Answer text={answer.text} />
+						</div>
+					);
 				})}
 			</section>
 		</div>

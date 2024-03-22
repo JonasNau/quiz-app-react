@@ -34,30 +34,7 @@ import Swal from "sweetalert2";
 import QuestionEditor from "@/app/components/QuestionEditor/QuestionEditor";
 import { createRoot } from "react-dom/client";
 import { getReadableByteSizeString } from "@/app/includes/ts/file-converter-functions";
-
-const QuizPackageList_LocalStorage_Name = "quiz-json-list";
-
-const templateQuizPackage = {
-	name: "Name",
-	description: "",
-	quizData: [
-		{
-			question: "Frage?",
-			answers: [
-				{
-					text: "Antwort 1",
-					isCorrect: true,
-				},
-				{
-					text: "Antwort 2",
-					isCorrect: false,
-				},
-			],
-		},
-	],
-} satisfies QuizPackage;
-
-const templateQuizPackageList = [templateQuizPackage] satisfies QuizPackageList;
+import { QuizPackageList_LocalStorage_Name, templateQuizPackageList } from "./constants";
 
 export default function InitQuiz() {
 	const router = useRouter();
@@ -373,16 +350,24 @@ export default function InitQuiz() {
 				<div className="code-section">
 					<div className="text-center mb-2">Gespeicherte Größe: {fileSizeReadable}</div>
 					<ButtonToolbar className="code-editor-toolbar d-flex flex-row justify-content-center">
-						<Button variant="danger" className="me-2" onClick={handleDelete}>
+						<Button variant="danger" className="me-2 delete" onClick={handleDelete}>
 							Löschen
 						</Button>
-						<Button variant="secondary" className="me-2" onClick={handleTemplate}>
+						<Button variant="secondary" className="me-2 preset" onClick={handleTemplate}>
 							Von Vorlage laden
 						</Button>
-						<Button variant="secondary" className="me-2" onClick={handleAutoFormatCode}>
+						<Button
+							variant="secondary"
+							className="me-2 format"
+							onClick={handleAutoFormatCode}
+						>
 							Formatieren
 						</Button>
-						<Button variant="secondary" className="me-2" onClick={handleFormatCodeMinify}>
+						<Button
+							variant="secondary"
+							className="me-2 minify"
+							onClick={handleFormatCodeMinify}
+						>
 							Verkleinern
 						</Button>
 					</ButtonToolbar>

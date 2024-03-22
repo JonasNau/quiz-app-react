@@ -113,7 +113,7 @@ app.prepare().then(() => {
 				.emit(ESocketEventNames.SEND_SCORE_MODE, scoreMode);
 		};
 
-		const sendUpdateQuizData = (quizData: QuizPackage) => {
+		const sendUpdateQuizData = (quizData: QuizPackage | null) => {
 			socket
 				.in(ERoomNames.BEAMER)
 				.in(ERoomNames.REFERENT_CONTROL)
@@ -121,6 +121,13 @@ app.prepare().then(() => {
 		};
 
 		socket.on(ESocketEventNames.INIT_QUIZ, (newQuizPackage: unknown) => {
+			if (newQuizPackage === null) {
+				quizPackage = null;
+				currentQuestionNumber = 0;
+				sendUpdateQuizData(null);
+
+				return;
+			}
 			const validatedQuizData = validateObjectWithJoiType<QuizPackage>(
 				QuizPackageSchema,
 				newQuizPackage
@@ -139,10 +146,6 @@ app.prepare().then(() => {
 		});
 
 		socket.on(ESocketEventNames.GET_QUIZ_DATA, () => {
-			if (!quizPackage) {
-				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
-				return;
-			}
 			socket.emit(ESocketEventNames.SEND_QUIZ_DATA, quizPackage);
 		});
 

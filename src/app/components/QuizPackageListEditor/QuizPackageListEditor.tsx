@@ -29,6 +29,7 @@ import JSONCodeEditor from "../JSONCodeEditor/JSONCodeEditor";
 import { validateObjectWithJoiType } from "@/app/includes/ts/frontend/validation/SchemaValidation";
 import { QuizDataSchema, QuizPackageSchema } from "@/schemas/joi/QuizSchemas";
 import { showErrorMessageToUser } from "@/app/includes/ts/frontend/userFeedback/PopUp";
+import { AddQuizPackageDefault } from "./constants";
 
 export type OnQuizDataListUpdate = (quizPackageList: QuizPackageList) => void;
 export type OnQuizPackageSelect = (quizPackage: QuizPackage) => void;
@@ -70,10 +71,7 @@ export default function QuizPackageListEditor({
 
 	const addNewEmptyQuizPackageToBottom = () => {
 		setQuizPackageList((prev) => {
-			return [
-				...prev,
-				{ name: "Quizname", description: "", quizData: [] },
-			] satisfies QuizPackageList;
+			return [...prev, AddQuizPackageDefault] satisfies QuizPackageList;
 		});
 		setUpdateActive(true);
 	};
@@ -262,7 +260,7 @@ export default function QuizPackageListEditor({
 				</Button>
 				<Button
 					variant="success"
-					className="add-quiz"
+					className="import-quiz"
 					onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 						importQuizViaJSON();
 					}}
