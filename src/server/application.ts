@@ -14,6 +14,7 @@ import { error } from "console";
 import { QuestionEntry, QuizPackage } from "@/interfaces/joi/QuizSchemas";
 import { UserWithCount, UserWithCountList } from "@/interfaces/user-counter";
 import { ScoreMode } from "@/interfaces/scoreMode";
+import { SERVER_SETTINGS } from "@/app/includes/ts/settings/settings";
 
 const port = GLOBAL_APPLICATION_CONFIG.PORT;
 const isDev = GLOBAL_APPLICATION_CONFIG.MODE === ApplicationMode.DEV;
@@ -117,7 +118,7 @@ app.prepare().then(() => {
 			socket
 				.in(ERoomNames.BEAMER)
 				.in(ERoomNames.REFERENT_CONTROL)
-				.emit(ESocketEventNames.SEND_SCORE_MODE, quizData);
+				.emit(ESocketEventNames.SEND_QUIZ_DATA, quizData);
 		};
 
 		socket.on(ESocketEventNames.INIT_QUIZ, (newQuizPackage: unknown) => {
@@ -151,7 +152,7 @@ app.prepare().then(() => {
 
 		socket.on(ESocketEventNames.SEND_QUESTION_NUMBER, (number: number) => {
 			if (!quizPackage) {
-				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
+				socket.emit(ESocketEventNames.ERROR, "QUESTION_NUMBER_INVALID");
 				return;
 			}
 
@@ -184,11 +185,6 @@ app.prepare().then(() => {
 		);
 
 		socket.on(ESocketEventNames.SEND_SHOW_SOLUTIONS, (newShowSolutions: boolean) => {
-			if (!quizPackage) {
-				socket.emit(ESocketEventNames.ERROR, "NO_QUIZ_DATA");
-				return;
-			}
-
 			showSolutions = newShowSolutions;
 			sendUpdateShowSolutions(showSolutions);
 		});
@@ -230,7 +226,10 @@ app.prepare().then(() => {
 		return handle(req, res);
 	});
 
-	httpServer.listen(port, () => {
-		console.log(`Ready on http://localhost:${port}`);
-	});
+	httpServer.listen(
+		{ host: SERVER_SETTINGS.LISTEN.HOST, port: SERVER_SETTINGS.LISTEN.PORT },
+		() => {
+			console.log(`Ready on http://${SERVER_SETTINGS.LISTEN.HOST}:${port}`);
+		}
+	);
 });

@@ -37,26 +37,7 @@ export default function BeamerAnsicht() {
 		setSocketIOClient(socketIOClient);
 		socketIOClient.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.BEAMER);
 
-		//Fetch quizData
-		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
-		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
-		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
-		socketIOClient.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
-		socketIOClient.emit(ESocketEventNames.GET_SCORE_MODE);
-		socketIOClient.emit(ESocketEventNames.GET_SHOW_SCORE_DISPLAY);
-		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
-		socketIOClient.emit(ESocketEventNames.GET_SHOW_SOLUTIONS);
-
-		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
-			if (errorName === "NO_QUIZ_DATA") {
-				setQuizPackage(null);
-				setWatingMessage(EWaitingMessage.NO_DATA);
-			}
-		});
-
-		socketIOClient.on("connect", () => {
-			socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
-		});
+		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {});
 
 		socketIOClient.on(ESocketEventNames.SUCCESS, async (successMessage: string) => {});
 
@@ -98,6 +79,16 @@ export default function BeamerAnsicht() {
 			setScoreMode(scoreMode);
 			console.log(scoreMode);
 		});
+
+		//Fetch quizData
+		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
+		socketIOClient.emit(ESocketEventNames.GET_QUESTION_NUMBER);
+		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
+		socketIOClient.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
+		socketIOClient.emit(ESocketEventNames.GET_SCORE_MODE);
+		socketIOClient.emit(ESocketEventNames.GET_SHOW_SCORE_DISPLAY);
+		socketIOClient.emit(ESocketEventNames.GET_COUNTER_VALUE);
+		socketIOClient.emit(ESocketEventNames.GET_SHOW_SOLUTIONS);
 	}, []);
 
 	const socketIOClientIsDefinedAndConnected = (
@@ -155,6 +146,5 @@ export default function BeamerAnsicht() {
 }
 
 enum EWaitingMessage {
-	WAITING_FOR_DATA = "Warte auf Daten.",
-	NO_DATA = "Keine Daten vorhanden. Warte auf Daten.",
+	WAITING_FOR_DATA = "Warte auf Daten",
 }

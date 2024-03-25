@@ -82,18 +82,7 @@ export default function ControlView() {
 		socketIOClient.emit(ESocketEventNames.GET_QUIZ_DATA);
 
 		socketIOClient.on(ESocketEventNames.ERROR, async (errorName: string) => {
-			if (errorName === "NO_QUIZ_DATA") {
-				setQuizPackage(null);
-				const userResponse = await showErrorMessageAndAskUser({
-					message:
-						"Es gibt noch keine Quizdaten. Bitte initialisiere das Quiz zuerst. Möchtest du das Quiz jetzt initialisieren?",
-				});
-
-				if (userResponse.isConfirmed) {
-					router.push("/referentenansicht/init");
-				}
-				return;
-			} else if (errorName === "QUESTION_NUMBER_INVALID") {
+			if (errorName === "QUESTION_NUMBER_INVALID") {
 				showErrorMessageToUser({ message: "Der Server lehnt die Fragenummer ab." });
 				return;
 			}
@@ -106,6 +95,17 @@ export default function ControlView() {
 			ESocketEventNames.SEND_QUIZ_DATA,
 			async (quizPackage: QuizPackage) => {
 				setQuizPackage(quizPackage);
+
+				if (quizPackage === null) {
+					const userResponse = await showErrorMessageAndAskUser({
+						message:
+							"Es gibt noch keine Quizdaten. Bitte initialisiere das Quiz zuerst. Möchtest du das Quiz jetzt initialisieren?",
+					});
+
+					if (userResponse.isConfirmed) {
+						router.push("/referentenansicht/init");
+					}
+				}
 			}
 		);
 

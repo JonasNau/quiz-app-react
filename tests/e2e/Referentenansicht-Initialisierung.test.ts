@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import { waitFor } from "@testing-library/react";
 import { describe } from "node:test";
 import playwrightConfig from "../../playwright.config";
@@ -10,6 +10,7 @@ import { ROOT_PATH as ROOT_PATH_BEAMER_ANSICHT } from "./Beameransicht.test";
 import { locators as locators_beamer_ansicht } from "./Beameransicht.test";
 import { io } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
+import { getServerURL } from "@/app/includes/ts/settings/server-url";
 
 export const ROOT_PATH = "/referentenansicht/init";
 const locators = {
@@ -25,6 +26,30 @@ const locators = {
 	VISUAL_CODE_EDITOR: {
 		ADD_QUIZ: ".add-quiz",
 		IMPORT_QUIZ: ".import-quiz",
+		CONTENT: {
+			getQuizNameElement: (page: Page, quizName: string) => {
+				return page.locator(
+					`${locators.QUIZ_PACKAGE_LIST_EDITOR} [data-quiz-name="${quizName}"] .quiz-name`
+				);
+			},
+		},
+		getDeleteButton: (page: Page, quizName: string) => {
+			return page.locator(
+				`${locators.QUIZ_PACKAGE_LIST_EDITOR} [data-quiz-name="${quizName}"] button[title="Quiz löschen"]`
+			);
+		},
+
+		getDownButton: (page: Page, quizName: string) => {
+			return page.locator(
+				`${locators.QUIZ_PACKAGE_LIST_EDITOR} [data-quiz-name="${quizName}"] button[title="Quiz nach unten verschieben"]`
+			);
+		},
+
+		getUpButton: (page: Page, quizName: string) => {
+			return page.locator(
+				`${locators.QUIZ_PACKAGE_LIST_EDITOR} [data-quiz-name="${quizName}"] button[title="Quiz nach oben verschieben"]`
+			);
+		},
 	},
 	SWAL: {
 		MODAL_CONTAINER: ".swal2-container",
@@ -329,8 +354,7 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		);
 		await waitForLocatorVisible(useQuizBtn);
 
-		const beamerAnsichtSocketIO = io("http://localhost:80");
-		beamerAnsichtSocketIO.connect();
+		const beamerAnsichtSocketIO = io(getServerURL().toString(), { autoConnect: true });
 
 		beamerAnsichtSocketIO.on("connect_error", (err) => {
 			console.error(`connect_error due to ${err.message}`);
@@ -342,12 +366,12 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 
 		let quizDataOnServer = 0;
 		beamerAnsichtSocketIO.on(ESocketEventNames.SEND_QUIZ_DATA, (quizData) => {
-			console.log("here");
 			quizDataOnServer = quizData;
 		});
-		beamerAnsichtSocketIO.send(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT);
-		beamerAnsichtSocketIO.send(ESocketEventNames.INIT_QUIZ, null);
-		beamerAnsichtSocketIO.send(ESocketEventNames.GET_QUIZ_DATA, null);
+
+		beamerAnsichtSocketIO.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT);
+		beamerAnsichtSocketIO.emit(ESocketEventNames.INIT_QUIZ, null);
+		beamerAnsichtSocketIO.emit(ESocketEventNames.GET_QUIZ_DATA);
 
 		await expect(async () => {
 			expect(quizDataOnServer).toBe(null);
@@ -361,7 +385,7 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		);
 		await expect(async () => {
 			await waitForLocatorVisible(beamerAnsichtWaiting);
-			expect(await beamerAnsichtWaiting.innerText()).toBe("Warte auf Daten.....");
+			expect(await beamerAnsichtWaiting.innerText()).toContain("Warte auf Daten");
 		}).toPass({ timeout: 5000 });
 
 		await useQuizBtn.click();
@@ -384,19 +408,116 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		await waitForLocatorVisible(questionText);
 		expect(await questionText.innerText()).toBe(testQuizJSON.quizData[0].question);
 
-		for (const answer in testQuizJSON.quizData[0].answers) {
+		for (const answer of testQuizJSON.quizData[0].answers) {
 			await waitForLocatorVisible(
-				await beamerAnsichtPage.locator(`[data-answer-text=${answer}]`)
+				beamerAnsichtPage.locator(`[data-answer-text=\"${answer.text}\"]`)
 			);
 		}
+	});
+	test("rearange quiz", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
 
-		throw new Error("Not implemented");
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const quiz1 = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [],
+		} satisfies QuizPackage;
+		const quiz2 = {
+			name: "Quiz 2",
+			description: "Description of Quiz 2",
+			quizData: [],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz1, quiz2] satisfies QuizPackageList));
+
+		const quiz1DownButton = locators.VISUAL_CODE_EDITOR.getDownButton(page, quiz1.name);
+		const quiz1UpButton = locators.VISUAL_CODE_EDITOR.getUpButton(page, quiz1.name);
+		const quiz2DownButton = locators.VISUAL_CODE_EDITOR.getDownButton(page, quiz2.name);
+		const quiz2UpButton = locators.VISUAL_CODE_EDITOR.getUpButton(page, quiz2.name);
+
+		waitForLocatorVisible(quiz1DownButton);
+		waitForLocatorVisible(quiz1UpButton);
+		waitForLocatorVisible(quiz2DownButton);
+		waitForLocatorVisible(quiz2UpButton);
+
+		expect(quiz1UpButton).toBeDisabled();
+		expect(quiz2DownButton).toBeDisabled();
+
+		expect(quiz1DownButton).toBeEnabled();
+		expect(quiz2UpButton).toBeEnabled();
+
+		await quiz1DownButton.click();
+
+		expect(await codeEditor.innerText()).toBe(
+			JSON.stringify([quiz2, quiz1] satisfies QuizPackageList)
+		);
+
+		expect(quiz1UpButton).toBeEnabled();
+		expect(quiz2DownButton).toBeEnabled();
+
+		expect(quiz1DownButton).toBeDisabled();
+		expect(quiz2UpButton).toBeDisabled();
+
+		await quiz1UpButton.click();
+
+		expect(await codeEditor.innerText()).toBe(
+			JSON.stringify([quiz1, quiz2] satisfies QuizPackageList)
+		);
+
+		expect(quiz1UpButton).toBeDisabled();
+		expect(quiz2DownButton).toBeDisabled();
+
+		expect(quiz1DownButton).toBeEnabled();
+		expect(quiz2UpButton).toBeEnabled();
 	});
-	test("rearange quiz", () => {
-		throw new Error("Not implemented");
-	});
-	test("delete quiz", () => {
-		throw new Error("Not implemented");
+	test("delete quiz", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const quiz1 = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [],
+		} satisfies QuizPackage;
+		const quiz2 = {
+			name: "Quiz 2",
+			description: "Description of Quiz 2",
+			quizData: [],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz1, quiz2] satisfies QuizPackageList));
+
+		const quizName1 = locators.VISUAL_CODE_EDITOR.CONTENT.getQuizNameElement(
+			page,
+			quiz1.name
+		);
+		const quizName2 = locators.VISUAL_CODE_EDITOR.CONTENT.getQuizNameElement(
+			page,
+			quiz2.name
+		);
+
+		await waitForLocatorVisible(quizName1);
+		await waitForLocatorVisible(quizName2);
+
+		const quiz1DeleteBtn = locators.VISUAL_CODE_EDITOR.getDeleteButton(page, quiz1.name);
+		waitForLocatorVisible(quiz1DeleteBtn);
+
+		await quiz1DeleteBtn.click();
+
+		await quizName1.waitFor({ state: "hidden" });
+
+		expect(await codeEditor.innerText()).toBe(
+			JSON.stringify([quiz2] satisfies QuizPackageList)
+		);
 	});
 	test("change name and description of quiz", () => {
 		throw new Error("Not implemented");
