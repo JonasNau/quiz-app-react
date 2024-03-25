@@ -20,6 +20,7 @@ import DraggableListItem from "../DragAndDrop/Draggable/DraggableListItem";
 import { autoResizeTextarea } from "@/app/includes/ts/frontend/inputs/element-helper-functions";
 import withReactContent from "sweetalert2-react-content";
 import Swal from "sweetalert2";
+import { templateQuestion } from "./constants";
 
 export type OnQuizPackageUpdate = (quizPackage: QuizPackage) => void;
 export type OnQuestionEdit = (questionIndex: number) => void;
@@ -58,7 +59,7 @@ export default function QuizPackageEditor({
 		setQuizPackage((prev) => {
 			return {
 				...prev,
-				quizData: [...prev.quizData, { question: "Frage?", answers: [] }],
+				quizData: [...prev.quizData, templateQuestion],
 			};
 		});
 	};

@@ -1,3 +1,4 @@
+import { getServerURL } from "@/app/includes/ts/settings/server-url";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
@@ -24,7 +25,7 @@ export default defineConfig({
 	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
 	use: {
 		/* Base URL to use in actions like `await page.goto('/')`. */
-		baseURL: "http://localhost",
+		baseURL: getServerURL().toString(),
 
 		/* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
 		trace: "on-first-retry",

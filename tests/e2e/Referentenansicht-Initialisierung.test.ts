@@ -1,8 +1,12 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page, selectors } from "@playwright/test";
 import { waitFor } from "@testing-library/react";
 import { describe } from "node:test";
 import playwrightConfig from "../../playwright.config";
-import { QuizPackage, QuizPackageList } from "@/interfaces/joi/QuizSchemas";
+import {
+	QuestionEntry,
+	QuizPackage,
+	QuizPackageList,
+} from "@/interfaces/joi/QuizSchemas";
 import { waitForLocatorVisible } from "./helper-functions/locator-functions";
 import { templateQuizPackageList } from "@/app/referentenansicht/init/constants";
 import { AddQuizPackageDefault } from "@/app/components/QuizPackageListEditor/constants";
@@ -11,6 +15,7 @@ import { locators as locators_beamer_ansicht } from "./Beameransicht.test";
 import { io } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
 import { getServerURL } from "@/app/includes/ts/settings/server-url";
+import { templateQuestion } from "@/app/components/QuizPackageEditor/constants";
 
 export const ROOT_PATH = "/referentenansicht/init";
 const locators = {
@@ -49,6 +54,33 @@ const locators = {
 			return page.locator(
 				`${locators.QUIZ_PACKAGE_LIST_EDITOR} [data-quiz-name="${quizName}"] button[title="Quiz nach oben verschieben"]`
 			);
+		},
+		getEditButton: (page: Page, quizName: string) => {
+			return page.locator(
+				`${locators.QUIZ_PACKAGE_LIST_EDITOR} [data-quiz-name="${quizName}"] button[title="Quiz bearbeiten"]`
+			);
+		},
+		EDIT_QUIZ: {
+			getQuizPackageEditor: (page: Page) => {
+				return page.locator(
+					`${locators.SWAL.MODAL_CONTAINER} [class*=quizPackageEditor]`
+				);
+			},
+			getQuizNameTextarea: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`textarea.name`
+				);
+			},
+			getQuizDescriptionTextarea: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`textarea.description`
+				);
+			},
+			getAddQuestionButton: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`button.add-answer`
+				);
+			},
 		},
 	},
 	SWAL: {
@@ -519,11 +551,114 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 			JSON.stringify([quiz2] satisfies QuizPackageList)
 		);
 	});
-	test("change name and description of quiz", () => {
-		throw new Error("Not implemented");
+	test("change name and description of quiz", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const quizBefore = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [],
+		} satisfies QuizPackage;
+		const quizAfter = {
+			name: "Quiz 2",
+			description: "Description of Quiz 2",
+			quizData: [],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quizBefore] satisfies QuizPackageList));
+
+		const quizNameSelectorBefore = locators.VISUAL_CODE_EDITOR.CONTENT.getQuizNameElement(
+			page,
+			quizBefore.name
+		);
+		await waitForLocatorVisible(quizNameSelectorBefore);
+
+		const quizBeforeEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(
+			page,
+			quizBefore.name
+		);
+		waitForLocatorVisible(quizBeforeEditButton);
+
+		await quizBeforeEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const quizNameTextarea =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizNameTextarea(page);
+		waitForLocatorVisible(quizNameTextarea);
+
+		const quizDescriptionTextarea =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizDescriptionTextarea(page);
+		waitForLocatorVisible(quizDescriptionTextarea);
+
+		expect(await quizNameTextarea.inputValue()).toBe(quizBefore.name);
+		expect(await quizDescriptionTextarea.inputValue()).toBe(quizBefore.description);
+
+		await quizNameTextarea.fill(quizAfter.name);
+		await quizDescriptionTextarea.fill(quizAfter.description);
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([quizAfter] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
+
+		const modalOkayButton = page.locator(locators.SWAL.CONFIRM);
+		waitForLocatorVisible(modalOkayButton);
+		await modalOkayButton.click();
 	});
-	test("add questions to quiz", () => {
-		throw new Error("Not implemented");
+	test("add questions to quiz", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const quizBefore = {
+			...AddQuizPackageDefault,
+		} satisfies QuizPackage;
+
+		const numberOfQuestions = 150;
+
+		const quizAfter = {
+			...quizBefore,
+			quizData: [...Array(numberOfQuestions).keys()].map(() => {
+				return templateQuestion;
+			}),
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quizBefore] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(
+			page,
+			quizBefore.name
+		);
+		await waitForLocatorVisible(quizEditButton);
+		await quizEditButton.click();
+
+		const addQuestionButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getAddQuestionButton(page);
+		waitForLocatorVisible(addQuestionButton);
+
+		for (let times = 0; times < numberOfQuestions; times++) {
+			await addQuestionButton.click({ timeout: 5000 });
+		}
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([quizAfter] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
+		const modalOkayButton = page.locator(locators.SWAL.CONFIRM);
+		waitForLocatorVisible(modalOkayButton);
+		await modalOkayButton.click();
 	});
 	test("rearange questions in quiz", () => {
 		throw new Error("Not implemented");
