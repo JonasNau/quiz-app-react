@@ -16,6 +16,9 @@ import { io } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
 import { getServerURL } from "@/app/includes/ts/settings/server-url";
 import { templateQuestion } from "@/app/components/QuizPackageEditor/constants";
+import { BUS_IMAGE_BASE_64 } from "./helper-functions/images";
+import { fileToBase64Data } from "@/app/includes/ts/file-converter-functions";
+import { DefaultAnswerToAdd } from "@/app/components/QuestionEditor/constants";
 
 export const ROOT_PATH = "/referentenansicht/init";
 const locators = {
@@ -78,7 +81,82 @@ const locators = {
 			},
 			getAddQuestionButton: (page: Page) => {
 				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`button.add-question`
+				);
+			},
+			getDeleteButton: (page: Page, questionTitle: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`[title="${questionTitle}"] button[title="Frage Löschen"]`
+				);
+			},
+
+			getDownButton: (page: Page, questionTitle: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`[title="${questionTitle}"] button[title="Nach hinten schieben"]`
+				);
+			},
+
+			getUpButton: (page: Page, questionTitle: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`[title="${questionTitle}"] button[title="Nach vorne schieben"]`
+				);
+			},
+			getEditButton: (page: Page, questionTitle: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`[title="${questionTitle}"] button[title="Frage Bearbeiten"]`
+				);
+			},
+		},
+		EDIT_QUESTION: {
+			getQuestionEditor: (page: Page) => {
+				return page.locator(`${locators.SWAL.MODAL_CONTAINER} [class*=questionEditor]`);
+			},
+			getQuestionTextTextarea: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`.question textarea`
+				);
+			},
+			getImageUploadButton: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`.question input#formFile`
+				);
+			},
+			getImage: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`.question .image-wrapper img`
+				);
+			},
+			getImageDeleteBtn: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`.question button.img-delete`
+				);
+			},
+
+			getAddAnswerButton: (page: Page) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
 					`button.add-answer`
+				);
+			},
+			getDeleteButton: (page: Page, answerText: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`[data-answer-text=\"${answerText}\"] title="Antwort löschen"`
+				);
+			},
+
+			getDownButton: (page: Page, answerText: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`[data-answer-text=\"${answerText}\"] title="Antwort nach unten schieben"`
+				);
+			},
+
+			getUpButton: (page: Page, questionTitle: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`[data-answer-text=\"${questionTitle}\"] title="Antwort nach oben schieben"`
+				);
+			},
+			getToggleCorrectButton: (page: Page, questionTitle: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
+					`[title="${questionTitle}"] button[title="Antwortmöglichkeit Korrektheit umschalten"]`
 				);
 			},
 		},
@@ -472,40 +550,44 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		const quiz2DownButton = locators.VISUAL_CODE_EDITOR.getDownButton(page, quiz2.name);
 		const quiz2UpButton = locators.VISUAL_CODE_EDITOR.getUpButton(page, quiz2.name);
 
-		waitForLocatorVisible(quiz1DownButton);
-		waitForLocatorVisible(quiz1UpButton);
-		waitForLocatorVisible(quiz2DownButton);
-		waitForLocatorVisible(quiz2UpButton);
+		await waitForLocatorVisible(quiz1DownButton);
+		await waitForLocatorVisible(quiz1UpButton);
+		await waitForLocatorVisible(quiz2DownButton);
+		await waitForLocatorVisible(quiz2UpButton);
 
-		expect(quiz1UpButton).toBeDisabled();
-		expect(quiz2DownButton).toBeDisabled();
+		await expect(quiz1UpButton).toBeDisabled();
+		await expect(quiz2DownButton).toBeDisabled();
 
-		expect(quiz1DownButton).toBeEnabled();
-		expect(quiz2UpButton).toBeEnabled();
+		await expect(quiz1DownButton).toBeEnabled();
+		await expect(quiz2UpButton).toBeEnabled();
 
 		await quiz1DownButton.click();
 
-		expect(await codeEditor.innerText()).toBe(
-			JSON.stringify([quiz2, quiz1] satisfies QuizPackageList)
-		);
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([quiz2, quiz1] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
 
-		expect(quiz1UpButton).toBeEnabled();
-		expect(quiz2DownButton).toBeEnabled();
+		await expect(quiz1UpButton).toBeEnabled();
+		await expect(quiz2DownButton).toBeEnabled();
 
-		expect(quiz1DownButton).toBeDisabled();
-		expect(quiz2UpButton).toBeDisabled();
+		await expect(quiz1DownButton).toBeDisabled();
+		await expect(quiz2UpButton).toBeDisabled();
 
 		await quiz1UpButton.click();
 
-		expect(await codeEditor.innerText()).toBe(
-			JSON.stringify([quiz1, quiz2] satisfies QuizPackageList)
-		);
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([quiz1, quiz2] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
 
-		expect(quiz1UpButton).toBeDisabled();
-		expect(quiz2DownButton).toBeDisabled();
+		await expect(quiz1UpButton).toBeDisabled();
+		await expect(quiz2DownButton).toBeDisabled();
 
-		expect(quiz1DownButton).toBeEnabled();
-		expect(quiz2UpButton).toBeEnabled();
+		await expect(quiz1DownButton).toBeEnabled();
+		await expect(quiz2UpButton).toBeEnabled();
 	});
 	test("delete quiz", async ({ page }) => {
 		const codeEditor = page.locator(locators.CODE_EDITOR);
@@ -660,27 +742,461 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		waitForLocatorVisible(modalOkayButton);
 		await modalOkayButton.click();
 	});
-	test("rearange questions in quiz", () => {
-		throw new Error("Not implemented");
+	test("rearange questions in quiz", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const question1 = { question: "Frage 1?", answers: [] } satisfies QuestionEntry;
+		const question2 = { question: "Frage 2?", answers: [] } satisfies QuestionEntry;
+
+		const quiz = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [question1, question2],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const quiz1DownButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getDownButton(
+			page,
+			question1.question
+		);
+		const quiz1UpButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getUpButton(
+			page,
+			question1.question
+		);
+		const quiz2DownButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getDownButton(
+			page,
+			question2.question
+		);
+		const quiz2UpButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getUpButton(
+			page,
+			question2.question
+		);
+
+		await waitForLocatorVisible(quiz1DownButton);
+		await waitForLocatorVisible(quiz1UpButton);
+		await waitForLocatorVisible(quiz2DownButton);
+		await waitForLocatorVisible(quiz2UpButton);
+
+		await expect(quiz1UpButton).toBeDisabled();
+		await expect(quiz2DownButton).toBeDisabled();
+
+		await expect(quiz1DownButton).toBeEnabled();
+		await expect(quiz2UpButton).toBeEnabled();
+
+		await quiz1DownButton.click();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{ ...quiz, quizData: [question2, question1] },
+				] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
+
+		await expect(quiz1UpButton).toBeEnabled();
+		await expect(quiz2DownButton).toBeEnabled();
+
+		await expect(quiz1DownButton).toBeDisabled();
+		await expect(quiz2UpButton).toBeDisabled();
+
+		await quiz1UpButton.click();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{ ...quiz, quizData: [question1, question2] },
+				] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
+
+		await expect(quiz1UpButton).toBeDisabled();
+		await expect(quiz2DownButton).toBeDisabled();
+
+		await expect(quiz1DownButton).toBeEnabled();
+		await expect(quiz2UpButton).toBeEnabled();
 	});
-	test("delete question in quiz", () => {
-		throw new Error("Not implemented");
+	test("delete question in quiz", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const question1 = { question: "Frage 1?", answers: [] } satisfies QuestionEntry;
+		const question2 = { question: "Frage 2?", answers: [] } satisfies QuestionEntry;
+
+		const quiz = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [question1, question2],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const deleteQuestion1Btn = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getDeleteButton(
+			page,
+			question1.question
+		);
+		await waitForLocatorVisible(deleteQuestion1Btn);
+
+		await deleteQuestion1Btn.click();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([{ ...quiz, quizData: [question2] }] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
 	});
 
-	test("open question edit modal", () => {
-		throw new Error("Not implemented");
+	test("open question edit modal", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const question1 = { question: "Frage 1?", answers: [] } satisfies QuestionEntry;
+		const question2 = { question: "Frage 2?", answers: [] } satisfies QuestionEntry;
+
+		const quiz = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [question1, question2],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const editQuestionBtn = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question1.question
+		);
+		await waitForLocatorVisible(editQuestionBtn);
+
+		await editQuestionBtn.click();
+
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Frage bearbeiten");
 	});
-	test("change question text of question", () => {
-		throw new Error("Not implemented");
+	test("change question text of question", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const question1 = { question: "Frage 1?", answers: [] } satisfies QuestionEntry;
+		const newQuestion = {
+			...question1,
+			question: "This is the new question text?",
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [question1],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const editQuestionBtn = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question1.question
+		);
+		await waitForLocatorVisible(editQuestionBtn);
+
+		await editQuestionBtn.click();
+
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Frage bearbeiten");
+
+		const questionTextTextarea =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionTextTextarea(page);
+		await waitForLocatorVisible(questionTextTextarea);
+
+		await questionTextTextarea.fill(newQuestion.question);
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([{ ...quiz, quizData: [newQuestion] }] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
 	});
-	test("add question image", () => {
-		throw new Error("Not implemented");
+	test("add question image", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const question1 = { question: "Frage 1?", answers: [] } satisfies QuestionEntry;
+		const newQuestion = {
+			...question1,
+			image: { base64: BUS_IMAGE_BASE_64.data },
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [question1],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const editQuestionBtn = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question1.question
+		);
+		await waitForLocatorVisible(editQuestionBtn);
+
+		await editQuestionBtn.click();
+
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Frage bearbeiten");
+
+		const imageUploadButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getImageUploadButton(page);
+		await waitForLocatorVisible(imageUploadButton);
+
+		const fileChooserPromise = page.waitForEvent("filechooser");
+		await imageUploadButton.click();
+		const fileChooser = await fileChooserPromise;
+
+		expect(fileChooser.isMultiple()).toBe(false);
+
+		const buffer = Buffer.from(BUS_IMAGE_BASE_64.data, "base64");
+
+		await fileChooser.setFiles([
+			{
+				buffer: buffer,
+				mimeType: BUS_IMAGE_BASE_64.mimeType,
+				name: `test.${BUS_IMAGE_BASE_64.fileEnding}`,
+			},
+		]);
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).not.toBe(
+				JSON.stringify([{ ...quiz, quizData: [newQuestion] }] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 5000 });
+
+		const img = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getImage(page);
+		await waitForLocatorVisible(img);
+		expect(await img.getAttribute("src")).toContain(BUS_IMAGE_BASE_64.data);
+
+		await imageUploadButton.waitFor({ state: "hidden" });
+
+		const deleteImgButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getImageDeleteBtn(page);
+		await waitForLocatorVisible(deleteImgButton);
 	});
-	test("remove question image", () => {
-		throw new Error("Not implemented");
+	test("remove question image", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const question1 = { question: "Frage 1?", answers: [] } satisfies QuestionEntry;
+		const newQuestion = {
+			...question1,
+			image: { base64: BUS_IMAGE_BASE_64.data },
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "Quiz 1",
+			description: "Description of Quiz 1",
+			quizData: [question1],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const editQuestionBtn = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question1.question
+		);
+		await waitForLocatorVisible(editQuestionBtn);
+
+		await editQuestionBtn.click();
+
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Frage bearbeiten");
+
+		const imageUploadButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getImageUploadButton(page);
+		await waitForLocatorVisible(imageUploadButton);
+
+		const fileChooserPromise = page.waitForEvent("filechooser");
+		await imageUploadButton.click();
+		const fileChooser = await fileChooserPromise;
+
+		expect(fileChooser.isMultiple()).toBe(false);
+
+		const buffer = Buffer.from(BUS_IMAGE_BASE_64.data, "base64");
+
+		const fileName = `test.${BUS_IMAGE_BASE_64.fileEnding}`;
+
+		await fileChooser.setFiles([
+			{
+				buffer: buffer,
+				mimeType: BUS_IMAGE_BASE_64.mimeType,
+				name: fileName,
+			},
+		]);
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toContain(BUS_IMAGE_BASE_64.data);
+		}).toPass({ timeout: 5000 });
+
+		const img = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getImage(page);
+		await waitForLocatorVisible(img);
+		expect(await img.getAttribute("src")).toContain(BUS_IMAGE_BASE_64.data);
+
+		await imageUploadButton.waitFor({ state: "hidden" });
+
+		const deleteImgButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getImageDeleteBtn(page);
+		await waitForLocatorVisible(deleteImgButton);
+
+		await deleteImgButton.click();
+
+		await deleteImgButton.waitFor({ state: "hidden" });
+		await img.waitFor({ state: "hidden" });
+
+		await waitForLocatorVisible(imageUploadButton);
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).not.toContain(BUS_IMAGE_BASE_64.data);
+		}).toPass({ timeout: 10000 });
 	});
-	test("add answer", () => {
-		throw new Error("Not implemented");
+	test("add answer", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const questionBefore = {
+			question: "Question?",
+			answers: [],
+		} satisfies QuestionEntry;
+
+		const numberOfAnswers = 150;
+
+		const questionAfter = {
+			...questionBefore,
+			answers: [...Array(numberOfAnswers).keys()].map(() => {
+				return DefaultAnswerToAdd;
+			}),
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "My cool quiz",
+			description: "My cool description",
+			quizData: [questionBefore],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quizEditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quizEditButton);
+		await quizEditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const questionEditButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			questionBefore.question
+		);
+		await waitForLocatorVisible(questionEditButton);
+
+		await questionEditButton.click();
+
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Frage bearbeiten");
+
+		const addAnswerButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getAddAnswerButton(page);
+		await waitForLocatorVisible(addAnswerButton);
+
+		for (let times = 0; times < numberOfAnswers; times++) {
+			await addAnswerButton.click({ timeout: 5000 });
+		}
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([{ ...quiz, quizData: [questionAfter] }] satisfies QuizPackageList)
+			);
+		}).toPass({ timeout: 10000 });
+		const modalOkayButton = page.locator(locators.SWAL.CONFIRM);
+		await waitForLocatorVisible(modalOkayButton);
+		await modalOkayButton.click();
 	});
 	test("modify answer text", () => {
 		throw new Error("Not implemented");

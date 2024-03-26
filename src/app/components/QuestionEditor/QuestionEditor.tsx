@@ -25,6 +25,7 @@ import {
 	getReadableByteSizeString,
 } from "@/app/includes/ts/file-converter-functions";
 import { showErrorMessageToUser } from "@/app/includes/ts/frontend/userFeedback/PopUp";
+import { DefaultAnswerToAdd } from "./constants";
 
 export type OnQuestionEntryUpdate = (questionEntry: QuestionEntry) => void;
 export type OnEditorClose = () => void;
@@ -89,7 +90,7 @@ export default function QuestionEditor({
 
 	const addEmptyAnswerToBottom = () => {
 		setQuestionEntry((prev) => {
-			return { ...prev, answers: [...prev.answers, { isCorrect: false, text: "" }] };
+			return { ...prev, answers: [...prev.answers, DefaultAnswerToAdd] };
 		});
 	};
 
@@ -158,7 +159,7 @@ export default function QuestionEditor({
 						<div>Gespeicherte Größe: {fileSizeReadable}</div>
 						<Button
 							variant="danger"
-							className="mb-2"
+							className="img-delete mb-2"
 							onClick={(event) =>
 								setQuestionEntry((prev) => {
 									return { ...prev, image: undefined };
@@ -204,7 +205,11 @@ export default function QuestionEditor({
 										});
 									}}
 								>
-									<div className={"answer-entry"} data-is-correct={answer.isCorrect}>
+									<div
+										className={"answer-entry"}
+										data-is-correct={answer.isCorrect}
+										data-answer-text={answer.text}
+									>
 										<div className="content">
 											<Form.Control
 												as="textarea"
@@ -234,6 +239,7 @@ export default function QuestionEditor({
 													<>
 														<Button
 															className="set-correct"
+															title="Antwortmöglichkeit Korrektheit umschalten"
 															data-is-correct={true}
 															onClick={(event) => {
 																handleAnswerIsCorrectToggle(index);
@@ -258,6 +264,7 @@ export default function QuestionEditor({
 
 												<Button
 													variant="primary"
+													title="Antwort nach oben schieben"
 													disabled={isFirstAnswer(index)}
 													onClick={(
 														event: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -276,6 +283,7 @@ export default function QuestionEditor({
 												<Button
 													variant="primary"
 													disabled={isLastAnswer(index)}
+													title="Antwort nach unten schieben"
 													onClick={(
 														event: React.MouseEvent<HTMLButtonElement, MouseEvent>
 													) => {
@@ -292,6 +300,7 @@ export default function QuestionEditor({
 												</Button>
 												<Button
 													variant="danger"
+													title="Antwort löschen"
 													onClick={(event) => deleteAnswerAtIndex(index)}
 												>
 													<FontAwesomeIcon icon={faTrashCan} />

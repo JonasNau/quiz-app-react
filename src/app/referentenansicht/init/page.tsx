@@ -267,7 +267,7 @@ export default function InitQuiz() {
 								}
 								onQuestionEntryUpdate={(updatedQuestionEntry: QuestionEntry) => {
 									if (!quizPackageList) return;
-									setQuizPackageList(
+									updateQuizPackageList(
 										quizPackageList.map(
 											(quizPackage: QuizPackage, quizPackageIndex: number) => {
 												if (editQuizNumber === quizPackageIndex)
@@ -300,7 +300,7 @@ export default function InitQuiz() {
 				});
 			}, 0);
 		},
-		[quizPackageList]
+		[quizPackageList, setQuizPackageList]
 	);
 
 	useEffect(() => {
