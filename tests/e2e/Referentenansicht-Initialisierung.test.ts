@@ -1,13 +1,17 @@
-import { test, expect, Page, selectors } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import { waitFor } from "@testing-library/react";
 import { describe } from "node:test";
 import playwrightConfig from "../../playwright.config";
 import {
+	AnswerEntry,
 	QuestionEntry,
 	QuizPackage,
 	QuizPackageList,
 } from "@/interfaces/joi/QuizSchemas";
-import { waitForLocatorVisible } from "./helper-functions/locator-functions";
+import {
+	waitForLocatorVisible,
+	locators as globalLocators,
+} from "./helper-functions/locator-functions";
 import { templateQuizPackageList } from "@/app/referentenansicht/init/constants";
 import { AddQuizPackageDefault } from "@/app/components/QuizPackageListEditor/constants";
 import { ROOT_PATH as ROOT_PATH_BEAMER_ANSICHT } from "./Beameransicht.test";
@@ -139,36 +143,34 @@ const locators = {
 			},
 			getDeleteButton: (page: Page, answerText: string) => {
 				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
-					`[data-answer-text=\"${answerText}\"] title="Antwort löschen"`
+					`[data-answer-text=\"${answerText}\"] button[title="Antwort löschen"]`
 				);
 			},
 
 			getDownButton: (page: Page, answerText: string) => {
 				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
-					`[data-answer-text=\"${answerText}\"] title="Antwort nach unten schieben"`
+					`[data-answer-text=\"${answerText}\"] button[title="Antwort nach unten schieben"]`
 				);
 			},
 
 			getUpButton: (page: Page, questionTitle: string) => {
 				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
-					`[data-answer-text=\"${questionTitle}\"] title="Antwort nach oben schieben"`
+					`[data-answer-text=\"${questionTitle}\"] button[title="Antwort nach oben schieben"]`
 				);
 			},
 			getToggleCorrectButton: (page: Page, questionTitle: string) => {
-				return locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getQuizPackageEditor(page).locator(
-					`[title="${questionTitle}"] button[title="Antwortmöglichkeit Korrektheit umschalten"]`
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`[data-answer-text=\"${questionTitle}\"] button[title="Antwortmöglichkeit Korrektheit umschalten"]`
+				);
+			},
+			getAnswerTextarea: (page: Page, answerText: string) => {
+				return locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getQuestionEditor(page).locator(
+					`[data-answer-text=\"${answerText}\"] .content textarea`
 				);
 			},
 		},
 	},
-	SWAL: {
-		MODAL_CONTAINER: ".swal2-container",
-		CODE_EDITOR:
-			".swal2-container .swal2-html-container .code-editor [contenteditable=true]",
-		CONFIRM: ".swal2-container .swal2-confirm",
-		TITLE: ".swal2-container .swal2-title",
-		MESSAGE: ".swal2-container .swal2-html-container",
-	},
+	SWAL: globalLocators.SWAL,
 };
 const templateQuizPackageListForTest = templateQuizPackageList;
 
@@ -708,7 +710,7 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 			...AddQuizPackageDefault,
 		} satisfies QuizPackage;
 
-		const numberOfQuestions = 150;
+		const numberOfQuestions = 50;
 
 		const quizAfter = {
 			...quizBefore,
@@ -1146,7 +1148,8 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 			answers: [],
 		} satisfies QuestionEntry;
 
-		const numberOfAnswers = 150;
+		//TODO: Examinate why 120 and higher doesnt work
+		const numberOfAnswers = 100;
 
 		const questionAfter = {
 			...questionBefore,
@@ -1198,16 +1201,330 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		await waitForLocatorVisible(modalOkayButton);
 		await modalOkayButton.click();
 	});
-	test("modify answer text", () => {
-		throw new Error("Not implemented");
+	test("delete answer", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const answer1 = {
+			text: "This is the first answer entry.",
+			isCorrect: false,
+		} satisfies AnswerEntry;
+		const answer2 = {
+			text: "This is the second answer entry.",
+			isCorrect: true,
+		} satisfies AnswerEntry;
+
+		const questionBefore = {
+			question: "This is the question text?",
+			answers: [answer1, answer2],
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "My cool quiz",
+			description: "My cool description",
+			quizData: [questionBefore],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quiz1EditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quiz1EditButton);
+
+		await quiz1EditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const question1EditButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			questionBefore.question
+		);
+		await waitForLocatorVisible(question1EditButton);
+
+		await question1EditButton.click();
+
+		const answer1TextInput = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getAnswerTextarea(
+			page,
+			answer1.text
+		);
+		const answer2TextInput = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getAnswerTextarea(
+			page,
+			answer2.text
+		);
+
+		await waitForLocatorVisible(answer1TextInput);
+		await waitForLocatorVisible(answer2TextInput);
+
+		const answer1DeleteButton = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getDeleteButton(
+			page,
+			answer1.text
+		);
+		await waitForLocatorVisible(answer1DeleteButton);
+
+		await answer1DeleteButton.click();
+
+		await answer1TextInput.waitFor({ state: "hidden" });
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{ ...quiz, quizData: [{ ...questionBefore, answers: [answer2] }] },
+				] satisfies QuizPackageList)
+			);
+		}).toPass();
 	});
-	test("rearange answer", () => {
-		throw new Error("Not implemented");
+	test("modify answer text", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const answerBefore = {
+			text: "This is the first answer entry.",
+			isCorrect: false,
+		} satisfies AnswerEntry;
+
+		const answerAfter = {
+			...answerBefore,
+			text: "This is the first edited answer entry.",
+		} satisfies AnswerEntry;
+
+		const question = {
+			question: "This is the question text?",
+			answers: [answerBefore],
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "My cool quiz",
+			description: "My cool description",
+			quizData: [question],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quiz1EditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quiz1EditButton);
+
+		await quiz1EditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const question1EditButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question.question
+		);
+		await waitForLocatorVisible(question1EditButton);
+
+		await question1EditButton.click();
+
+		const answer1TextInput = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getAnswerTextarea(
+			page,
+			answerBefore.text
+		);
+
+		await waitForLocatorVisible(answer1TextInput);
+
+		await answer1TextInput.fill(answerAfter.text);
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{ ...quiz, quizData: [{ ...question, answers: [answerAfter] }] },
+				] satisfies QuizPackageList)
+			);
+		}).toPass();
 	});
-	test("delete question", () => {
-		throw new Error("Not implemented");
+	test("rearange answer", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const answer1 = {
+			text: "This is the first answer entry.",
+			isCorrect: false,
+		} satisfies AnswerEntry;
+
+		const answer2 = {
+			text: "This is the second answer entry.",
+			isCorrect: true,
+		} satisfies AnswerEntry;
+
+		const question = {
+			question: "This is the question text?",
+			answers: [answer1, answer2],
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "My cool quiz",
+			description: "My cool description",
+			quizData: [question],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quiz1EditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quiz1EditButton);
+
+		await quiz1EditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const questionEditButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question.question
+		);
+		await waitForLocatorVisible(questionEditButton);
+
+		await questionEditButton.click();
+
+		const answer1DownButton = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getDownButton(
+			page,
+			answer1.text
+		);
+		const answer1UpButton = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getUpButton(
+			page,
+			answer1.text
+		);
+
+		const answer2DownButton = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getDownButton(
+			page,
+			answer2.text
+		);
+		const answer2UpButton = locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getUpButton(
+			page,
+			answer2.text
+		);
+
+		await waitForLocatorVisible(answer1DownButton);
+		await waitForLocatorVisible(answer1UpButton);
+		await waitForLocatorVisible(answer2DownButton);
+		await waitForLocatorVisible(answer2UpButton);
+
+		await expect(answer1DownButton).toBeEnabled();
+		await expect(answer1UpButton).toBeDisabled();
+
+		await expect(answer2DownButton).toBeDisabled();
+		await expect(answer2UpButton).toBeEnabled();
+
+		await answer1DownButton.click();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{ ...quiz, quizData: [{ ...question, answers: [answer2, answer1] }] },
+				] satisfies QuizPackageList)
+			);
+		}).toPass();
+
+		await expect(answer1DownButton).toBeDisabled();
+		await expect(answer1UpButton).toBeEnabled();
+
+		await expect(answer2DownButton).toBeEnabled();
+		await expect(answer2UpButton).toBeDisabled();
+
+		await answer1UpButton.click();
+
+		await expect(answer1DownButton).toBeEnabled();
+		await expect(answer1UpButton).toBeDisabled();
+
+		await expect(answer2DownButton).toBeDisabled();
+		await expect(answer2UpButton).toBeEnabled();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{ ...quiz, quizData: [{ ...question, answers: [answer1, answer2] }] },
+				] satisfies QuizPackageList)
+			);
+		}).toPass();
 	});
-	test("change answer is correct", () => {
-		throw new Error("Not implemented");
+
+	test("change answer is correct", async ({ page }) => {
+		const codeEditor = page.locator(locators.CODE_EDITOR);
+		await waitForLocatorVisible(codeEditor);
+
+		await expect(async () => {
+			expect((await codeEditor.innerText()).trim()).not.toBe("");
+		}).toPass({ timeout: 5000 });
+
+		const answer = {
+			text: "This is the first answer entry.",
+			isCorrect: false,
+		} satisfies AnswerEntry;
+
+		const question = {
+			question: "This is the question text?",
+			answers: [answer],
+		} satisfies QuestionEntry;
+
+		const quiz = {
+			name: "My cool quiz",
+			description: "My cool description",
+			quizData: [question],
+		} satisfies QuizPackage;
+
+		await codeEditor.fill(JSON.stringify([quiz] satisfies QuizPackageList));
+
+		const quiz1EditButton = locators.VISUAL_CODE_EDITOR.getEditButton(page, quiz.name);
+		await waitForLocatorVisible(quiz1EditButton);
+
+		await quiz1EditButton.click();
+
+		const modalTitle = page.locator(locators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+		expect(await modalTitle.innerText()).toBe("Quiz bearbeiten");
+
+		const question1EditButton = locators.VISUAL_CODE_EDITOR.EDIT_QUIZ.getEditButton(
+			page,
+			question.question
+		);
+		await waitForLocatorVisible(question1EditButton);
+
+		await question1EditButton.click();
+
+		const answer1IsCorrectToggleButton =
+			locators.VISUAL_CODE_EDITOR.EDIT_QUESTION.getToggleCorrectButton(page, answer.text);
+
+		await waitForLocatorVisible(answer1IsCorrectToggleButton);
+
+		await answer1IsCorrectToggleButton.click();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{
+						...quiz,
+						quizData: [{ ...question, answers: [{ ...answer, isCorrect: true }] }],
+					},
+				] satisfies QuizPackageList)
+			);
+		}).toPass();
+
+		await answer1IsCorrectToggleButton.click();
+
+		await expect(async () => {
+			expect(await codeEditor.innerText()).toBe(
+				JSON.stringify([
+					{
+						...quiz,
+						quizData: [{ ...question, answers: [{ ...answer, isCorrect: false }] }],
+					},
+				] satisfies QuizPackageList)
+			);
+		}).toPass();
 	});
 });

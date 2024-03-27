@@ -252,6 +252,7 @@ export default function QuestionEditor({
 													<>
 														<Button
 															className="set-correct"
+															title="Antwortmöglichkeit Korrektheit umschalten"
 															data-is-correct={false}
 															onClick={(event) => {
 																handleAnswerIsCorrectToggle(index);

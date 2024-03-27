@@ -1,7 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitFor } from "@testing-library/react";
 import { describe } from "node:test";
-import playwrightConfig from "../../playwright.config";
 
 describe("Start Page", () => {
 	test("Start page has title", async ({ page }) => {

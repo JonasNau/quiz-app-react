@@ -204,7 +204,7 @@ export default function QuizPackageEditor({
 			<section className="d-flex flex-column align-items-center">
 				<Button
 					variant="success"
-					className="add-answer"
+					className="add-question"
 					onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 						addNewEmptyQuestionEntryToBottom();
 					}}
