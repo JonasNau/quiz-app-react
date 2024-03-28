@@ -368,12 +368,12 @@ export default function ControlView() {
 						<Container className="content">
 							<Row>
 								<Col className="col-12 col-md-6 col-xl-12 d-flex flex-column align-items-center justify-content-center">
-									<div>
-										Frage <b>{currentQuestionNumber + 1}</b> von{" "}
-										<b>{getMaxQuestions()}</b>
+									<div className="question-number-display">
+										Frage <b className="current">{currentQuestionNumber + 1}</b> von{" "}
+										<b className="max">{getMaxQuestions()}</b>
 									</div>
 									<Form.Switch
-										className="controllerSwitch"
+										className="controllerSwitch show-solutions-preview"
 										label="Lösung in der Vorschau anzeigen:"
 										checked={showSolutionsInPreview}
 										onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -382,7 +382,7 @@ export default function ControlView() {
 										}}
 									/>
 									<Form.Switch
-										className="controllerSwitch"
+										className="controllerSwitch score-mode"
 										label={`Punkte Modus (${
 											scoreMode === ScoreMode.GLOBAL ? "global" : "Benutzer"
 										}):`}
@@ -401,7 +401,9 @@ export default function ControlView() {
 									<Row>
 										<Col className="d-flex text-center flex-column justify-content-center align-items-center">
 											<b className="flex-grow-1 d-flex justify-content-center align-items-center">
-												<div>Lösung {showSolutions ? "verstecken" : "anzeigen"}:</div>
+												<div className="show-solution-label">
+													Lösung {showSolutions ? "verstecken" : "anzeigen"}:
+												</div>
 											</b>
 											<div>
 												{showSolutions ? (
@@ -435,7 +437,7 @@ export default function ControlView() {
 										</Col>
 										<Col className="d-flex text-center flex-column justify-content-center align-items-center">
 											<b className="flex-grow-1 d-flex justify-content-center align-items-center">
-												<div>
+												<div className="show-score-display-label">
 													Ergebnis {showScoreDisplay ? "verstecken" : "anzeigen"}:
 												</div>
 											</b>
@@ -508,84 +510,88 @@ export default function ControlView() {
 											)}
 										</Button>
 									</section>
-									{scoreMode === ScoreMode.GLOBAL ? (
-										<>
-											{" "}
-											<section className="btn-counter">
-												<div className="text-center" style={{ fontWeight: "bold" }}>
-													Punkte:
-												</div>
-												<div
-													className="number"
-													onDoubleClick={() => currentCounterReset()}
-												>
-													{currentCounterValue}
-												</div>
+									<div className="score-controller">
+										{scoreMode === ScoreMode.GLOBAL ? (
+											<>
+												{" "}
+												<section className="btn-counter">
+													<div className="text-center" style={{ fontWeight: "bold" }}>
+														Punkte:
+													</div>
+													<div
+														className="number"
+														onDoubleClick={() => currentCounterReset()}
+													>
+														{currentCounterValue}
+													</div>
 
-												<Button
-													onClick={() => currentCounterDecrement()}
-													style={{ backgroundColor: "red" }}
-												>
-													{" "}
-													<FontAwesomeIcon
-														icon={faMinus}
-														style={{ fontSize: 30, color: "black" }}
-													/>
-												</Button>
-												<Button
-													onClick={() => currentCounterIncrement()}
-													style={{ backgroundColor: "green" }}
-												>
-													<FontAwesomeIcon
-														icon={faPlus}
-														style={{ fontSize: 30, color: "black" }}
-													/>
-												</Button>
-											</section>
-										</>
-									) : (
-										<>
-											{" "}
-											<section className="user-counters">
-												<div className="text-center" style={{ fontWeight: "bold" }}>
-													Benutzer-Punkte:
-												</div>
-												{userWithCountList && userWithCountList.length
-													? userWithCountList.map((userdata, index) => {
-															return (
-																<div key={index} className="d-flex mb-1">
-																	<UserCounterWithIncrementAndDecrement
-																		username={userdata.username}
-																		count={userdata.count}
-																		onUpdateCount={(count) => {
-																			const newUserWithCountList = userWithCountList.map(
-																				(current, i) => {
-																					if (index === i)
-																						return { ...current, count: count };
-																					return current;
-																				}
-																			);
+													<Button
+														className="btn-decrement"
+														onClick={() => currentCounterDecrement()}
+														style={{ backgroundColor: "red" }}
+													>
+														{" "}
+														<FontAwesomeIcon
+															icon={faMinus}
+															style={{ fontSize: 30, color: "black" }}
+														/>
+													</Button>
+													<Button
+														className="btn-increment"
+														onClick={() => currentCounterIncrement()}
+														style={{ backgroundColor: "green" }}
+													>
+														<FontAwesomeIcon
+															icon={faPlus}
+															style={{ fontSize: 30, color: "black" }}
+														/>
+													</Button>
+												</section>
+											</>
+										) : (
+											<>
+												{" "}
+												<section className="user-counters">
+													<div className="text-center" style={{ fontWeight: "bold" }}>
+														Benutzer-Punkte:
+													</div>
+													{userWithCountList && userWithCountList.length
+														? userWithCountList.map((userdata, index) => {
+																return (
+																	<div key={index} className="d-flex mb-1">
+																		<UserCounterWithIncrementAndDecrement
+																			username={userdata.username}
+																			count={userdata.count}
+																			onUpdateCount={(count) => {
+																				const newUserWithCountList =
+																					userWithCountList.map((current, i) => {
+																						if (index === i)
+																							return { ...current, count: count };
+																						return current;
+																					});
 
-																			setUserWithCountList(newUserWithCountList);
-																			sendUserWithCountList(newUserWithCountList);
-																		}}
-																	/>
-																</div>
-															);
-														})
-													: null}
+																				setUserWithCountList(newUserWithCountList);
+																				sendUserWithCountList(newUserWithCountList);
+																			}}
+																		/>
+																	</div>
+																);
+															})
+														: null}
 
-												<Button
-													variant="success"
-													onClick={async () => {
-														setUserEditModalShouldOpen(true);
-													}}
-												>
-													Benutzer bearbeiten <FontAwesomeIcon icon={faPencil} />
-												</Button>
-											</section>
-										</>
-									)}
+													<Button
+														variant="success"
+														className="edit-users"
+														onClick={async () => {
+															setUserEditModalShouldOpen(true);
+														}}
+													>
+														Benutzer bearbeiten <FontAwesomeIcon icon={faPencil} />
+													</Button>
+												</section>
+											</>
+										)}
+									</div>
 								</Col>
 							</Row>
 						</Container>

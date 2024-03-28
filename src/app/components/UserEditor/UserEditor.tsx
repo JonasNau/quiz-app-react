@@ -37,82 +37,91 @@ export default function UserEditor({
 			className={`${styles.userEditor} d-flex align-items-center justify-content-center`}
 		>
 			<div className="wrapper">
-				{userWithCountList && userWithCountList.length
-					? userWithCountList.map((userdata, index) => {
-							return (
-								<div key={index} className="d-flex mb-1">
-									<Button
-										onClick={() => {
-											console.log(userWithCountList);
-											const newUserWithCountList = userWithCountList.filter(
-												(current, i) => {
-													if (i === index) return false;
-													return true;
-												}
-											);
-
-											setUserWithCountList(newUserWithCountList);
-											onUpdateUserWithCountList &&
-												onUpdateUserWithCountList(newUserWithCountList);
-										}}
-										style={{
-											padding: 5,
-											height: "30px",
-											alignSelf: "center",
-											background: "none",
-											border: "none",
-										}}
-										className="d-flex align-items-center justify-content-center me-2"
+				<div className="user-list">
+					{userWithCountList && userWithCountList.length
+						? userWithCountList.map((userdata, index) => {
+								return (
+									<div
+										key={userdata.username}
+										data-username={userdata.username}
+										className="d-flex mb-1"
 									>
-										<FontAwesomeIcon
-											icon={faTrashCan}
-											style={{ fontSize: 20, color: "red" }}
-										></FontAwesomeIcon>
-									</Button>
-									<Button
-										variant="success"
-										className="me-2"
-										onClick={async () => {
-											onUsernameModalOpen && onUsernameModalOpen();
-											const result = await askUserTextInput({
-												message: "Wie soll der Name des Benutzers sein?",
-												title: "Name eingeben",
-												inputValue: userdata.username,
-											});
-											onUsernameModalClose && onUsernameModalClose();
-											if (!result.isConfirmed) return;
-											const value = result.value;
-											if (typeof value !== "string" || !value.trim().length) return;
-											if (!userWithCountList) {
-												await showErrorMessageToUser({
-													message:
-														"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
+										<Button
+											onClick={() => {
+												console.log(userWithCountList);
+												const newUserWithCountList = userWithCountList.filter(
+													(current, i) => {
+														if (i === index) return false;
+														return true;
+													}
+												);
+
+												setUserWithCountList(newUserWithCountList);
+												onUpdateUserWithCountList &&
+													onUpdateUserWithCountList(newUserWithCountList);
+											}}
+											style={{
+												padding: 5,
+												height: "30px",
+												alignSelf: "center",
+												background: "none",
+												border: "none",
+											}}
+											className="delete-user d-flex align-items-center justify-content-center me-2"
+										>
+											<FontAwesomeIcon
+												icon={faTrashCan}
+												style={{ fontSize: 20, color: "red" }}
+											></FontAwesomeIcon>
+										</Button>
+										<Button
+											variant="success"
+											className="me-2 edit-user"
+											onClick={async () => {
+												onUsernameModalOpen && onUsernameModalOpen();
+												const result = await askUserTextInput({
+													message: "Wie soll der Name des Benutzers sein?",
+													title: "Name eingeben",
+													inputValue: userdata.username,
 												});
-												return;
-											}
+												onUsernameModalClose && onUsernameModalClose();
+												if (!result.isConfirmed) return;
+												const value = result.value;
+												if (typeof value !== "string" || !value.trim().length) return;
+												if (!userWithCountList) {
+													await showErrorMessageToUser({
+														message:
+															"Die Benutzer konnten nicht erfolgreich mit dem Server synchronisiert werden. Versuche es bitte erneut.",
+													});
+													return;
+												}
 
-											let newUserWithCountList = userWithCountList.map((current, i) => {
-												if (index === i) return { ...current, username: value };
-												return current;
-											});
+												let newUserWithCountList = userWithCountList.map((current, i) => {
+													if (index === i) return { ...current, username: value };
+													return current;
+												});
 
-											onUpdateUserWithCountList &&
-												onUpdateUserWithCountList(newUserWithCountList);
-											setUserWithCountList(newUserWithCountList);
-										}}
-									>
-										<FontAwesomeIcon icon={faPencil} />
-									</Button>
-									<span style={{ fontWeight: "bold", fontSize: "1.5rem" }}>
-										{userdata.username}
-									</span>
-								</div>
-							);
-						})
-					: null}
+												onUpdateUserWithCountList &&
+													onUpdateUserWithCountList(newUserWithCountList);
+												setUserWithCountList(newUserWithCountList);
+											}}
+										>
+											<FontAwesomeIcon icon={faPencil} />
+										</Button>
+										<span
+											style={{ fontWeight: "bold", fontSize: "1.5rem" }}
+											className="username"
+										>
+											{userdata.username}
+										</span>
+									</div>
+								);
+							})
+						: null}
+				</div>
 				<Button
 					variant="success"
-					className="mt-2"
+					className="mt-2 add-user"
 					onClick={async () => {
 						onUsernameModalOpen && onUsernameModalOpen();
 						const result = await askUserTextInput({

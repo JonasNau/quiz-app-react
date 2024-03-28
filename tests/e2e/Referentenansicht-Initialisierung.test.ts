@@ -11,11 +11,11 @@ import {
 import {
 	waitForLocatorVisible,
 	locators as globalLocators,
+	PATHS,
+	beameransicht_locators,
 } from "./helper-functions/locator-functions";
 import { templateQuizPackageList } from "@/app/referentenansicht/init/constants";
 import { AddQuizPackageDefault } from "@/app/components/QuizPackageListEditor/constants";
-import { ROOT_PATH as ROOT_PATH_BEAMER_ANSICHT } from "./Beameransicht.test";
-import { locators as locators_beamer_ansicht } from "./Beameransicht.test";
 import { io } from "socket.io-client";
 import { ERoomNames, ESocketEventNames } from "@/app/includes/ts/socketIO/socketNames";
 import { getServerURL } from "@/app/includes/ts/settings/server-url";
@@ -24,7 +24,7 @@ import { BUS_IMAGE_BASE_64 } from "./helper-functions/images";
 import { fileToBase64Data } from "@/app/includes/ts/file-converter-functions";
 import { DefaultAnswerToAdd } from "@/app/components/QuestionEditor/constants";
 
-export const ROOT_PATH = "/referentenansicht/init";
+export const ROOT_PATH = PATHS.REFERENTENANSICHT.INIT;
 const locators = {
 	QUIZ_PACKAGE_LIST_EDITOR: "[class*=quizPackageListEditor]",
 	CODE_EDITOR: ".code-section .code-editor [contenteditable=true]",
@@ -490,10 +490,10 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 		}).toPass({ timeout: 5000 });
 
 		const beamerAnsichtPage = await context.newPage();
-		await beamerAnsichtPage.goto(ROOT_PATH_BEAMER_ANSICHT);
+		await beamerAnsichtPage.goto(PATHS.BEAMERANSICHT);
 
 		const beamerAnsichtWaiting = beamerAnsichtPage.locator(
-			locators_beamer_ansicht.WAITING
+			beameransicht_locators.WAITING
 		);
 		await expect(async () => {
 			await waitForLocatorVisible(beamerAnsichtWaiting);
@@ -516,7 +516,8 @@ describe("Referentenasicht - Quiz Initialisieren", () => {
 			await beamerAnsichtWaiting.waitFor({ state: "hidden" });
 		}).toPass({ timeout: 5000 });
 
-		const questionText = beamerAnsichtPage.locator(locators_beamer_ansicht.QUESTION);
+		const questionText =
+			beameransicht_locators.QUIZ_READ_ONLY.getQuestion(beamerAnsichtPage);
 		await waitForLocatorVisible(questionText);
 		expect(await questionText.innerText()).toBe(testQuizJSON.quizData[0].question);
 

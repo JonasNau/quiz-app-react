@@ -1,16 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import { waitFor } from "@testing-library/react";
 import { describe } from "node:test";
+import { beameransicht_locators } from "./helper-functions/locator-functions";
 
 export const ROOT_PATH = "/beamer-ansicht";
-
-export const locators = {
-	QUIZ_READ_ONLY: "[class*=quizReadOnly]",
-	QUESTION: "[class*=quizReadOnly] .question",
-	ANSWERS_LIST: "[class*=quizReadOnly] .answersList",
-	IMAGE: "[class*=quizReadOnly] .image-wrapper img",
-	WAITING: "[class*=beamer-ansicht_waiting]",
-};
 
 test.beforeEach(async ({ page }) => {
 	await page.goto(ROOT_PATH);
@@ -18,6 +11,7 @@ test.beforeEach(async ({ page }) => {
 
 describe("Referentenansicht Steuerung", () => {
 	test("no question data loaded", () => {
+		//Schon durch Initialisierung abgedeckt
 		throw new Error("Not implemented");
 	});
 	test("show solutions", () => {
