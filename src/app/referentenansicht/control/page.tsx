@@ -514,7 +514,7 @@ export default function ControlView() {
 										{scoreMode === ScoreMode.GLOBAL ? (
 											<>
 												{" "}
-												<section className="btn-counter">
+												<section className="global-counter">
 													<div className="text-center" style={{ fontWeight: "bold" }}>
 														Punkte:
 													</div>
@@ -555,29 +555,35 @@ export default function ControlView() {
 													<div className="text-center" style={{ fontWeight: "bold" }}>
 														Benutzer-Punkte:
 													</div>
-													{userWithCountList && userWithCountList.length
-														? userWithCountList.map((userdata, index) => {
-																return (
-																	<div key={index} className="d-flex mb-1">
-																		<UserCounterWithIncrementAndDecrement
-																			username={userdata.username}
-																			count={userdata.count}
-																			onUpdateCount={(count) => {
-																				const newUserWithCountList =
-																					userWithCountList.map((current, i) => {
-																						if (index === i)
-																							return { ...current, count: count };
-																						return current;
-																					});
+													<div className="user-counters-list">
+														{userWithCountList && userWithCountList.length
+															? userWithCountList.map((userdata, index) => {
+																	return (
+																		<div
+																			key={userdata.username}
+																			data-username={userdata.username}
+																			className="d-flex mb-1"
+																		>
+																			<UserCounterWithIncrementAndDecrement
+																				username={userdata.username}
+																				count={userdata.count}
+																				onUpdateCount={(count) => {
+																					const newUserWithCountList =
+																						userWithCountList.map((current, i) => {
+																							if (index === i)
+																								return { ...current, count: count };
+																							return current;
+																						});
 
-																				setUserWithCountList(newUserWithCountList);
-																				sendUserWithCountList(newUserWithCountList);
-																			}}
-																		/>
-																	</div>
-																);
-															})
-														: null}
+																					setUserWithCountList(newUserWithCountList);
+																					sendUserWithCountList(newUserWithCountList);
+																				}}
+																			/>
+																		</div>
+																	);
+																})
+															: null}
+													</div>
 
 													<Button
 														variant="success"
@@ -605,7 +611,7 @@ export default function ControlView() {
 							/>
 						) : (
 							<>
-								<p className="text-center">
+								<p className="text-center init-quiz-message">
 									Bitte initialisiere das Quiz zuerst oder füge eine Frage hinzu.
 								</p>
 							</>

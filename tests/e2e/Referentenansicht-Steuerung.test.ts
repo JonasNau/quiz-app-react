@@ -8,9 +8,14 @@ import {
 	locators as globalLocators,
 	waitForLocatorVisible,
 } from "./helper-functions/locator-functions";
-import { QuizPackage } from "@/interfaces/joi";
+import { QuestionEntry, QuizPackage } from "@/interfaces/joi";
 import { ROOT_PATH as Beameransicht_ROOT_PATH } from "./Beameransicht.test";
-import { beameransicht_locators } from "./helper-functions/locator-functions";
+import {
+	beameransicht_locators,
+	referentenansicht_control_locators as locators,
+} from "./helper-functions/locator-functions";
+import { ScoreMode } from "@/interfaces/scoreMode";
+import { UserWithCount, UserWithCountList } from "@/interfaces/user-counter";
 
 export const ROOT_PATH = PATHS.REFERENTENANSICHT.CONTROL;
 
@@ -32,12 +37,35 @@ test.beforeEach(async ({ page }) => {
 		quizDataOnServer = quizData;
 	});
 
+	let showScoreDisplayOnServer = 0;
+	initSocketIO.on(ESocketEventNames.SEND_SHOW_SCORE_DISPLAY, (showScoreDisplay) => {
+		showScoreDisplayOnServer = showScoreDisplay;
+	});
+
 	initSocketIO.emit(ESocketEventNames.JOIN_ROOM, ERoomNames.REFERENT_CONTROL);
 	initSocketIO.emit(ESocketEventNames.INIT_QUIZ, null);
+	initSocketIO.emit(ESocketEventNames.SEND_COUNTER_VALUE, 0);
+	initSocketIO.emit(ESocketEventNames.SEND_SCORE_MODE, ScoreMode.GLOBAL);
+	initSocketIO.emit(ESocketEventNames.SEND_SHOW_SOLUTIONS, false);
+	initSocketIO.emit(ESocketEventNames.SEND_SHOW_SCORE_DISPLAY, false);
+	initSocketIO.emit(
+		ESocketEventNames.SEND_USER_WITH_COUNT_LIST,
+		[] satisfies UserWithCountList
+	);
+	initSocketIO.emit(
+		ESocketEventNames.SEND_USER_WITH_COUNT_LIST,
+		[] satisfies UserWithCountList
+	);
+
 	initSocketIO.emit(ESocketEventNames.GET_QUIZ_DATA);
+	initSocketIO.emit(ESocketEventNames.GET_SHOW_SCORE_DISPLAY);
 
 	await expect(async () => {
 		expect(quizDataOnServer).toBe(null);
+	}).toPass({ timeout: 5000 });
+
+	await expect(async () => {
+		expect(showScoreDisplayOnServer).toBe(false);
 	}).toPass({ timeout: 5000 });
 
 	const modalTitle = page.locator(globalLocators.SWAL.TITLE);
@@ -54,6 +82,12 @@ test.beforeEach(async ({ page }) => {
 	await waitForLocatorVisible(cancelButton);
 
 	await cancelButton.click();
+
+	const initQuizMessage = locators.PREVIEW.getInitQuizMessage(page);
+	await waitForLocatorVisible(initQuizMessage);
+	expect(await initQuizMessage.innerText()).toBe(
+		"Bitte initialisiere das Quiz zuerst oder füge eine Frage hinzu."
+	);
 
 	await modalTitle.waitFor({ state: "hidden" });
 });
@@ -193,6 +227,32 @@ const initQuizViaSocketIO = async (quizPackage: QuizPackage) => {
 	}).toPass({ timeout: 5000 });
 };
 
+const initUserScoreWithCountListViaSocketIO = async (
+	userWithCountList: UserWithCountList
+) => {
+	const initSocketIO = io(getServerURL().toString(), { autoConnect: true });
+
+	initSocketIO.on("connect_error", (err) => {
+		console.error(`connect_error due to ${err.message}`);
+	});
+
+	await expect(() => expect(initSocketIO.connected).toBe(true)).toPass({
+		timeout: 5000,
+	});
+
+	let userWithCountListOnServer = 0;
+	initSocketIO.on(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, (userWithCountList) => {
+		userWithCountListOnServer = userWithCountList;
+	});
+
+	initSocketIO.emit(ESocketEventNames.SEND_USER_WITH_COUNT_LIST, userWithCountList);
+	initSocketIO.emit(ESocketEventNames.GET_USER_WITH_COUNT_LIST);
+
+	await expect(async () => {
+		expect(userWithCountListOnServer).toEqual(userWithCountList);
+	}).toPass({ timeout: 5000 });
+};
+
 describe("Referentenansicht Steuerung", () => {
 	test("link back to start page works", async ({ page }) => {
 		const link = page.getByRole("link", { name: "Zur Übersicht" });
@@ -203,39 +263,332 @@ describe("Referentenansicht Steuerung", () => {
 	test("question change", async ({ page, context }) => {
 		await initQuizViaSocketIO(testQuiz);
 
+		const previewQuiz = locators.PREVIEW.QUIZ_READ_ONLY.getQuizReadOnly(page);
+		await waitForLocatorVisible(previewQuiz);
+
 		const beameransichtPage = await context.newPage();
 		await beameransichtPage.goto(Beameransicht_ROOT_PATH);
 
-		throw new Error("Not implemented");
+		const quiz = beameransicht_locators.QUIZ_READ_ONLY.getQuizReadOnly(beameransichtPage);
+		await waitForLocatorVisible(quiz);
+
+		const questionNumberCurrent = locators.CONTROLLER.getQuestionNumberCurrent(page);
+		const questionNumberMax = locators.CONTROLLER.getQuestionNumberMax(page);
+
+		expect(testQuiz.quizData.length).toBeGreaterThanOrEqual(2);
+
+		expect(await questionNumberCurrent.innerText()).toBe(String(0));
+		expect(await questionNumberMax.innerText()).toBe(String(testQuiz.quizData.length));
+
+		const nextQuestionButton = locators.CONTROLLER.getBtnNext(page);
+		const previousQuestionButton = locators.CONTROLLER.getBtnNext(page);
+
+		await waitForLocatorVisible(nextQuestionButton);
+		await waitForLocatorVisible(previousQuestionButton);
+
+		const questionsAreSyncedAndHaveCorrectValue = async (question: QuestionEntry) => {
+			const questionTextPreview = locators.PREVIEW.QUIZ_READ_ONLY.getQuestion(page);
+			await waitForLocatorVisible(questionTextPreview);
+
+			const questionTextQuiz =
+				beameransicht_locators.QUIZ_READ_ONLY.getQuestion(beameransichtPage);
+			await waitForLocatorVisible(questionTextQuiz);
+
+			expect(await questionTextPreview.innerText()).toBe(question.question);
+			expect(await questionTextQuiz.innerText()).toBe(question.question);
+		};
+
+		await questionsAreSyncedAndHaveCorrectValue(testQuiz.quizData[0]);
+
+		await nextQuestionButton.click();
+
+		expect(await questionNumberCurrent.innerText()).toBe(String(1));
+		await questionsAreSyncedAndHaveCorrectValue(testQuiz.quizData[1]);
+
+		await previousQuestionButton.click();
+
+		expect(await questionNumberCurrent.innerText()).toBe(String(0));
+		await questionsAreSyncedAndHaveCorrectValue(testQuiz.quizData[0]);
 	});
-	test("show solutions in preview", () => {
-		throw new Error("Not implemented");
+	test("show solutions in preview", async ({ page }) => {
+		await initQuizViaSocketIO(testQuiz);
+
+		const previewQuiz = locators.PREVIEW.QUIZ_READ_ONLY.getQuizReadOnly(page);
+		await waitForLocatorVisible(previewQuiz);
+
+		const showSolutionsPreviewSwitch =
+			locators.CONTROLLER.getShowSolutionsPreviewSwitch(page);
+		await waitForLocatorVisible(showSolutionsPreviewSwitch);
+
+		expect(await showSolutionsPreviewSwitch.isChecked()).toBe(false);
+
+		const getCountCorrectAnswersInQuestionEntry = (questionEntry: QuestionEntry) => {
+			return questionEntry.answers.filter((current) => current.isCorrect).length;
+		};
+		const getCountCorrectAnswersInQuiz = async (page: Page) => {
+			return (await page.$$(beameransicht_locators.QUIZ_READ_ONLY.ANSWER.CORRECT)).length;
+		};
+		const getCountWrongAnswersInQuestionEntry = (questionEntry: QuestionEntry) => {
+			return questionEntry.answers.filter((current) => !current.isCorrect).length;
+		};
+		const getCountWrongAnswersInQuiz = async (page: Page) => {
+			return (await page.$$(beameransicht_locators.QUIZ_READ_ONLY.ANSWER.WRONG)).length;
+		};
+
+		await showSolutionsPreviewSwitch.click();
+
+		expect(await getCountCorrectAnswersInQuiz(page)).toBe(
+			getCountCorrectAnswersInQuestionEntry(testQuiz.quizData[0])
+		);
+		expect(await getCountWrongAnswersInQuiz(page)).toBe(
+			getCountWrongAnswersInQuestionEntry(testQuiz.quizData[0])
+		);
 	});
-	test("set score mode", () => {
-		throw new Error("Not implemented");
+	test("set score mode", async ({ page }) => {
+		const scoreModeSwitch = locators.CONTROLLER.getScoreModeSwitch(page);
+		await waitForLocatorVisible(scoreModeSwitch);
+
+		const userCounters =
+			locators.CONTROLLER.SCORE_CONTROLLER.USER.getUserCounterController(page);
+		const globalCounter =
+			locators.CONTROLLER.SCORE_CONTROLLER.GLOBAL.getGlobalCounterController(page);
+
+		expect(await scoreModeSwitch.isChecked()).toBe(false);
+
+		await globalCounter.waitFor({ state: "visible" });
+		await userCounters.waitFor({ state: "hidden" });
+
+		await scoreModeSwitch.click();
+
+		await userCounters.waitFor({ state: "visible" });
+		await globalCounter.waitFor({ state: "hidden" });
 	});
-	test("show solutions", () => {
-		throw new Error("Not implemented");
+	test("show scores global mode ", async ({ page, context }) => {
+		await initQuizViaSocketIO(testQuiz);
+		const scoreModeSwitch = locators.CONTROLLER.getScoreModeSwitch(page);
+		await waitForLocatorVisible(scoreModeSwitch);
+
+		const showScoreDisplayBtn = locators.CONTROLLER.getBtnShowScoreDisplay(page);
+		await waitForLocatorVisible(showScoreDisplayBtn);
+
+		const userCounters =
+			locators.CONTROLLER.SCORE_CONTROLLER.USER.getUserCounterController(page);
+		const globalCounter =
+			locators.CONTROLLER.SCORE_CONTROLLER.GLOBAL.getGlobalCounterController(page);
+
+		expect(await scoreModeSwitch.isChecked()).toBe(false);
+
+		await userCounters.waitFor({ state: "hidden" });
+		await globalCounter.waitFor({ state: "visible" });
+
+		const beameransichtPage = await context.newPage();
+		await beameransichtPage.goto(Beameransicht_ROOT_PATH);
+
+		const quiz = beameransicht_locators.QUIZ_READ_ONLY.getQuizReadOnly(beameransichtPage);
+		await waitForLocatorVisible(quiz);
+		const quizScore =
+			beameransicht_locators.SCORE_DISPLAY.GLOBAL.getScore(beameransichtPage);
+
+		const showScoresBtn = locators.CONTROLLER.getBtnShowScoreDisplay(page);
+		await waitForLocatorVisible(showScoresBtn);
+
+		const incrementBtn =
+			locators.CONTROLLER.SCORE_CONTROLLER.GLOBAL.getBtnIncrement(page);
+		const decrementBtn =
+			locators.CONTROLLER.SCORE_CONTROLLER.GLOBAL.getBtnDecrement(page);
+		const controllerScore =
+			locators.CONTROLLER.SCORE_CONTROLLER.GLOBAL.getCurrentScore(page);
+
+		await waitForLocatorVisible(incrementBtn);
+		await waitForLocatorVisible(decrementBtn);
+		await waitForLocatorVisible(controllerScore);
+
+		const expectControllerScoreIs = async (score: number) => {
+			await expect(async () =>
+				expect(await controllerScore.innerText()).toBe(String(score))
+			).toPass({ timeout: 1000 });
+		};
+
+		const expectQuizScoreIs = async (score: number) => {
+			await expect(async () =>
+				expect(await quizScore.innerText()).toBe(String(score))
+			).toPass({ timeout: 1000 });
+		};
+
+		await quizScore.waitFor({ state: "hidden" });
+		expect(await showScoreDisplayBtn.getAttribute("data-show-score-display")).toBe(
+			String(false)
+		);
+
+		await showScoreDisplayBtn.click();
+
+		await quizScore.waitFor({ state: "visible" });
+
+		expect(await showScoreDisplayBtn.getAttribute("data-show-score-display")).toBe(
+			String(true)
+		);
+
+		await expectControllerScoreIs(0);
+		await expectQuizScoreIs(0);
+
+		for (let i = 0; i > -100; i--) {
+			await decrementBtn.click();
+			await expectControllerScoreIs(i - 1);
+			await expectQuizScoreIs(i - 1);
+		}
+		await controllerScore.dblclick();
+		await expectControllerScoreIs(0);
+		await expectQuizScoreIs(0);
+
+		for (let i = 0; i < 100; i++) {
+			await incrementBtn.click();
+			await expectControllerScoreIs(i + 1);
+			await expectQuizScoreIs(i + 1);
+		}
+
+		await controllerScore.dblclick();
+		await expectControllerScoreIs(0);
+		await expectQuizScoreIs(0);
 	});
-	test("show scores global mode ", () => {
-		throw new Error("Not implemented");
-	});
-	test("show scores user mode", () => {
+	test("show scores user mode", async ({ page, context }) => {
+		await initQuizViaSocketIO(testQuiz);
+		await initUserScoreWithCountListViaSocketIO([]);
+		const scoreModeSwitch = locators.CONTROLLER.getScoreModeSwitch(page);
+		await waitForLocatorVisible(scoreModeSwitch);
+
+		const showScoreDisplayBtn = locators.CONTROLLER.getBtnShowScoreDisplay(page);
+		await waitForLocatorVisible(showScoreDisplayBtn);
+
+		expect(await showScoreDisplayBtn.getAttribute("data-show-score-display")).toBe(
+			String(false)
+		);
+
+		const userCounters =
+			locators.CONTROLLER.SCORE_CONTROLLER.USER.getUserCounterController(page);
+		const globalCounter =
+			locators.CONTROLLER.SCORE_CONTROLLER.GLOBAL.getGlobalCounterController(page);
+
+		expect(await scoreModeSwitch.isChecked()).toBe(false);
+
+		await userCounters.waitFor({ state: "hidden" });
+		await globalCounter.waitFor({ state: "visible" });
+
+		await scoreModeSwitch.click();
+		expect(await scoreModeSwitch.isChecked()).toBe(true);
+
+		await userCounters.waitFor({ state: "visible" });
+		await globalCounter.waitFor({ state: "hidden" });
+
+		const beameransichtPage = await context.newPage();
+		await beameransichtPage.goto(Beameransicht_ROOT_PATH);
+
+		const quiz = beameransicht_locators.QUIZ_READ_ONLY.getQuizReadOnly(beameransichtPage);
+		await waitForLocatorVisible(quiz);
+
+		const showScoresBtn = locators.CONTROLLER.getBtnShowScoreDisplay(page);
+		await waitForLocatorVisible(showScoresBtn);
+
+		await showScoreDisplayBtn.click();
+
+		expect(await showScoreDisplayBtn.getAttribute("data-show-score-display")).toBe(
+			String(true)
+		);
+
+		const editUsersBtn = locators.CONTROLLER.SCORE_CONTROLLER.USER.getEditUsersBtn(page);
+		await waitForLocatorVisible(editUsersBtn);
+
+		const usersWithCountList = [
+			{ username: "Jonas", count: 1 },
+			{ username: "Niklas", count: 1 },
+			{ username: "Dominik", count: 1 },
+		] satisfies UserWithCountList;
+
+		const createUserWithCountListVisually = async (
+			userWithCountList: UserWithCountList
+		) => {
+			await editUsersBtn.click();
+			const modalTitle = page.locator(globalLocators.SWAL.TITLE);
+
+			const addUserBtn =
+				locators.CONTROLLER.SCORE_CONTROLLER.USER.USER_EDITOR.getAddUserBtn(page);
+			await waitForLocatorVisible(addUserBtn);
+
+			const usernameInput =
+				locators.CONTROLLER.SCORE_CONTROLLER.USER.getEnterNameInput(page);
+
+			const okBtn = page.locator(globalLocators.SWAL.CONFIRM);
+
+			for (const user of userWithCountList) {
+				await waitForLocatorVisible(modalTitle);
+				expect(await modalTitle.innerText()).toBe("Benutzer bearbeiten");
+				await addUserBtn.click();
+				await waitForLocatorVisible(modalTitle);
+				expect(await modalTitle.innerText()).toBe("Name eingeben");
+				await waitForLocatorVisible(usernameInput);
+				await usernameInput.fill(user.username);
+				await waitForLocatorVisible(okBtn);
+				await okBtn.click();
+				await waitForLocatorVisible(modalTitle);
+				expect(await modalTitle.innerText()).toBe("Benutzer bearbeiten");
+				await waitForLocatorVisible(
+					locators.CONTROLLER.SCORE_CONTROLLER.USER.USER_EDITOR.getUserEntry(
+						page,
+						user.username
+					)
+				);
+			}
+
+			await waitForLocatorVisible(okBtn);
+			await okBtn.click();
+
+			for (const user of userWithCountList) {
+				const userIncrementBtn =
+					locators.CONTROLLER.SCORE_CONTROLLER.USER.USER_ENTRY.getIncrementBtn(
+						page,
+						user.username
+					);
+				const userDecrementBtn =
+					locators.CONTROLLER.SCORE_CONTROLLER.USER.USER_ENTRY.getDecrementBtn(
+						page,
+						user.username
+					);
+				const usercount = locators.CONTROLLER.SCORE_CONTROLLER.USER.USER_ENTRY.getCount(
+					page,
+					user.username
+				);
+
+				expect(await usercount.innerText()).toBe(String(0));
+
+				if (user.count === 0) continue;
+
+				if (user.count > 0) {
+					for (let i = 0; i < user.count; i++) {
+						await userIncrementBtn.click();
+						expect(await usercount.innerText()).toBe(String(i + 1));
+					}
+				} else {
+					for (let i = 0; i > user.count; i--) {
+						await userDecrementBtn.click();
+						expect(await usercount.innerText()).toBe(String(i - 1));
+					}
+				}
+			}
+		};
+
+		await createUserWithCountListVisually(usersWithCountList);
+
+		const expectUserScoreTableHasEntriesInOrder = (
+			orderList: Array<{ username: string; score: number; order: number }>
+		) => {
+			//TODO: Check entries in order
+		};
+
 		throw new Error("Not implemented");
 	});
 	test("first question to last question button", () => {
 		throw new Error("Not implemented");
 	});
 	test("last question to first question button", () => {
-		throw new Error("Not implemented");
-	});
-	test("increment and decrement count user mode", () => {
-		throw new Error("Not implemented");
-	});
-	test("increment and decrement count global mode", () => {
-		throw new Error("Not implemented");
-	});
-	test("", () => {
 		throw new Error("Not implemented");
 	});
 });

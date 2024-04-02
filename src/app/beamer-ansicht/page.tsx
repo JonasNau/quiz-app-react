@@ -106,20 +106,21 @@ export default function BeamerAnsicht() {
 					<>
 						<h1 className="text-center">Ergebnisse</h1>
 						{scoreMode !== null && scoreMode === ScoreMode.GLOBAL ? (
-							<>
+							<div className="score-display-global">
 								{" "}
 								<div
 									className={`${styles.wrapper} text-center`}
 									style={{ fontSize: "3rem" }}
 								>
-									Aktuelle Punktzahl: <span>{currentCounterValue}</span>
+									Aktuelle Punktzahl:{" "}
+									<span className="current">{currentCounterValue}</span>
 								</div>
-							</>
+							</div>
 						) : (
-							<>
+							<div className="score-display-user">
 								{" "}
 								<UserScoreList userWithCountList={userWithCountList} />
-							</>
+							</div>
 						)}
 					</>
 				) : (

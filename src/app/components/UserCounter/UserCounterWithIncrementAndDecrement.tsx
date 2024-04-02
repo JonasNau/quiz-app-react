@@ -52,7 +52,7 @@ export default function UserCounterWithIncrementAndDecrement({
 				<Button
 					onClick={() => currentCounterDecrement()}
 					style={{ backgroundColor: "red" }}
-					className="m-1"
+					className="m-1 btn-decrement"
 				>
 					{" "}
 					<FontAwesomeIcon icon={faMinus} style={{ fontSize: 15, color: "black" }} />
@@ -60,7 +60,7 @@ export default function UserCounterWithIncrementAndDecrement({
 				<Button
 					onClick={() => currentCounterIncrement()}
 					style={{ backgroundColor: "green" }}
-					className="me-2 ms-1"
+					className="me-2 ms-1 btn-increment"
 				>
 					<FontAwesomeIcon icon={faPlus} style={{ fontSize: 15, color: "black" }} />
 				</Button>
