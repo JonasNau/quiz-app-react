@@ -126,7 +126,7 @@ app.prepare().then(() => {
 				quizPackage = null;
 				currentQuestionNumber = 0;
 				sendUpdateQuizData(null);
-
+				sendUpdateQuestionNumber(currentQuestionNumber);
 				return;
 			}
 			const validatedQuizData = validateObjectWithJoiType<QuizPackage>(
@@ -144,6 +144,7 @@ app.prepare().then(() => {
 
 			socket.emit(ESocketEventNames.SUCCESS, "UPDATED_DATA");
 			sendUpdateQuizData(quizPackage);
+			sendUpdateQuestionNumber(currentQuestionNumber);
 		});
 
 		socket.on(ESocketEventNames.GET_QUIZ_DATA, () => {

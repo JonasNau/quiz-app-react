@@ -9,7 +9,6 @@ import {
 	waitForLocatorVisible,
 } from "./helper-functions/locator-functions";
 import { QuestionEntry, QuizPackage } from "@/interfaces/joi";
-import { ROOT_PATH as Beameransicht_ROOT_PATH } from "./Beameransicht.test";
 import {
 	beameransicht_locators,
 	referentenansicht_control_locators as locators,
@@ -267,7 +266,7 @@ describe("Referentenansicht Steuerung", () => {
 		await waitForLocatorVisible(previewQuiz);
 
 		const beameransichtPage = await context.newPage();
-		await beameransichtPage.goto(Beameransicht_ROOT_PATH);
+		await beameransichtPage.goto(PATHS.BEAMERANSICHT);
 
 		const quiz = beameransicht_locators.QUIZ_READ_ONLY.getQuizReadOnly(beameransichtPage);
 		await waitForLocatorVisible(quiz);
@@ -277,7 +276,7 @@ describe("Referentenansicht Steuerung", () => {
 
 		expect(testQuiz.quizData.length).toBeGreaterThanOrEqual(2);
 
-		expect(await questionNumberCurrent.innerText()).toBe(String(0));
+		expect(await questionNumberCurrent.innerText()).toBe(String(1));
 		expect(await questionNumberMax.innerText()).toBe(String(testQuiz.quizData.length));
 
 		const nextQuestionButton = locators.CONTROLLER.getBtnNext(page);
@@ -382,7 +381,7 @@ describe("Referentenansicht Steuerung", () => {
 		await globalCounter.waitFor({ state: "visible" });
 
 		const beameransichtPage = await context.newPage();
-		await beameransichtPage.goto(Beameransicht_ROOT_PATH);
+		await beameransichtPage.goto(PATHS.BEAMERANSICHT);
 
 		const quiz = beameransicht_locators.QUIZ_READ_ONLY.getQuizReadOnly(beameransichtPage);
 		await waitForLocatorVisible(quiz);
@@ -480,7 +479,7 @@ describe("Referentenansicht Steuerung", () => {
 		await globalCounter.waitFor({ state: "hidden" });
 
 		const beameransichtPage = await context.newPage();
-		await beameransichtPage.goto(Beameransicht_ROOT_PATH);
+		await beameransichtPage.goto(PATHS.BEAMERANSICHT);
 
 		const quiz = beameransicht_locators.QUIZ_READ_ONLY.getQuizReadOnly(beameransichtPage);
 		await waitForLocatorVisible(quiz);
@@ -500,7 +499,7 @@ describe("Referentenansicht Steuerung", () => {
 		const usersWithCountList = [
 			{ username: "Jonas", count: 1 },
 			{ username: "Niklas", count: 1 },
-			{ username: "Dominik", count: 1 },
+			{ username: "Dominik", count: 0 },
 		] satisfies UserWithCountList;
 
 		const createUserWithCountListVisually = async (
@@ -577,18 +576,158 @@ describe("Referentenansicht Steuerung", () => {
 
 		await createUserWithCountListVisually(usersWithCountList);
 
-		const expectUserScoreTableHasEntriesInOrder = (
+		const expectUserScoreTableHasEntriesInOrder = async (
 			orderList: Array<{ username: string; score: number; order: number }>
 		) => {
-			//TODO: Check entries in order
+			const userScoreEntries = await beameransichtPage.$$(
+				".user-score-table .user-score-entry"
+			);
+			expect(userScoreEntries.length).toBe(orderList.length);
+			const actualOrderList: Array<{
+				username: string | undefined;
+				score: number | undefined;
+				order: number | undefined;
+			}> = [];
+
+			for (const entry of userScoreEntries) {
+				const order = await (await entry.$(".index"))?.innerText();
+
+				const username = await (await entry.$(".username"))?.innerText();
+				const score = await (await entry.$(".count"))?.innerText();
+				actualOrderList.push({
+					username: username,
+					score: Number(score),
+					order: Number(order),
+				});
+			}
+
+			expect(actualOrderList).toEqual(orderList);
 		};
 
-		throw new Error("Not implemented");
+		await expectUserScoreTableHasEntriesInOrder([
+			{ username: "Jonas", score: 1, order: 1 },
+			{ username: "Niklas", score: 1, order: 1 },
+			{ username: "Dominik", score: 0, order: 3 },
+		]);
 	});
-	test("first question to last question button", () => {
-		throw new Error("Not implemented");
+	test("last question to first question button", async ({ page }) => {
+		await initQuizViaSocketIO(testQuiz);
+		const questionNumberCurrent = locators.CONTROLLER.getQuestionNumberCurrent(page);
+		const questionNumberMax = locators.CONTROLLER.getQuestionNumberMax(page);
+
+		expect(testQuiz.quizData.length).toBeGreaterThanOrEqual(1);
+
+		expect(await questionNumberCurrent.innerText()).toBe(String(1));
+		expect(await questionNumberMax.innerText()).toBe(String(testQuiz.quizData.length));
+
+		const nextQuestionButton = locators.CONTROLLER.getBtnNext(page);
+		const previousQuestionButton = locators.CONTROLLER.getBtnPrevious(page);
+
+		await waitForLocatorVisible(nextQuestionButton);
+		await waitForLocatorVisible(previousQuestionButton);
+
+		await expect(
+			nextQuestionButton.locator("[data-icon='rotate-right']")
+		).not.toBeVisible();
+
+		// Go to last question
+		for (let i = 1; i < testQuiz.quizData.length; i++) {
+			await nextQuestionButton.click();
+			expect(await questionNumberCurrent.innerText()).toBe(String(i + 1));
+		}
+
+		await expect(nextQuestionButton.locator("[data-icon='rotate-right']")).toBeVisible();
+
+		await nextQuestionButton.click();
+
+		const modalTitle = page.locator(globalLocators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+
+		const modalMessage = page.locator(globalLocators.SWAL.MESSAGE);
+		await waitForLocatorVisible(modalMessage);
+
+		expect(await modalTitle.innerText()).toBe("Warnung");
+		expect(await modalMessage.innerText()).toBe(
+			"Es gibt keine weitere Frage. Möchtest du von vorne beginnen?"
+		);
+
+		const cancelButton = page.locator(globalLocators.SWAL.CANCEL);
+		await waitForLocatorVisible(cancelButton);
+
+		await cancelButton.click();
+		expect(await questionNumberCurrent.innerText()).toBe(
+			String(testQuiz.quizData.length)
+		);
+
+		await nextQuestionButton.click();
+
+		await waitForLocatorVisible(modalMessage);
+
+		expect(await modalTitle.innerText()).toBe("Warnung");
+		expect(await modalMessage.innerText()).toBe(
+			"Es gibt keine weitere Frage. Möchtest du von vorne beginnen?"
+		);
+
+		const okBtn = page.locator(globalLocators.SWAL.CONFIRM);
+		await okBtn.click();
+		expect(await questionNumberCurrent.innerText()).toBe(String(1));
 	});
-	test("last question to first question button", () => {
-		throw new Error("Not implemented");
+	test("first question to last question button", async ({ page }) => {
+		await initQuizViaSocketIO(testQuiz);
+		const questionNumberCurrent = locators.CONTROLLER.getQuestionNumberCurrent(page);
+		const questionNumberMax = locators.CONTROLLER.getQuestionNumberMax(page);
+
+		expect(testQuiz.quizData.length).toBeGreaterThanOrEqual(1);
+
+		expect(await questionNumberCurrent.innerText()).toBe(String(1));
+		expect(await questionNumberMax.innerText()).toBe(String(testQuiz.quizData.length));
+
+		const nextQuestionButton = locators.CONTROLLER.getBtnNext(page);
+		const previousQuestionButton = locators.CONTROLLER.getBtnPrevious(page);
+
+		await waitForLocatorVisible(nextQuestionButton);
+		await waitForLocatorVisible(previousQuestionButton);
+
+		await expect(
+			previousQuestionButton.locator("[data-icon='rotate-left']")
+		).toBeVisible();
+		await previousQuestionButton.click();
+
+		const modalTitle = page.locator(globalLocators.SWAL.TITLE);
+		await waitForLocatorVisible(modalTitle);
+
+		const modalMessage = page.locator(globalLocators.SWAL.MESSAGE);
+		await waitForLocatorVisible(modalMessage);
+
+		expect(await modalTitle.innerText()).toBe("Warnung");
+		expect(await modalMessage.innerText()).toBe(
+			"Du bist bereits am Anfang. Möchtest du zur letzten Frage springen?"
+		);
+
+		const cancelButton = page.locator(globalLocators.SWAL.CANCEL);
+		await waitForLocatorVisible(cancelButton);
+
+		await cancelButton.click();
+		expect(await questionNumberCurrent.innerText()).toBe(String(1));
+
+		await previousQuestionButton.click();
+
+		await waitForLocatorVisible(modalMessage);
+
+		expect(await modalTitle.innerText()).toBe("Warnung");
+		expect(await modalMessage.innerText()).toBe(
+			"Du bist bereits am Anfang. Möchtest du zur letzten Frage springen?"
+		);
+
+		const okBtn = page.locator(globalLocators.SWAL.CONFIRM);
+		await okBtn.click();
+
+		expect(await questionNumberCurrent.innerText()).toBe(
+			String(testQuiz.quizData.length)
+		);
+
+		await expect(
+			previousQuestionButton.locator("[data-icon='rotate-left']")
+		).not.toBeVisible();
 	});
 });
